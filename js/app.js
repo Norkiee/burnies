@@ -287,30 +287,18 @@ function downloadCalendarFile(plan, options) {
   const anchor = document.createElement("a");
   anchor.href = URL.createObjectURL(blob);
   anchor.download = "burnies-plan.ics";
+  document.body.append(anchor);
   anchor.click();
+  anchor.remove();
   setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
-}
-
-async function openDeviceCalendar(plan, options) {
-  const file = calendarFile(plan, options);
-  try {
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: "Burnies calendar reminders" });
-      return true;
-    }
-  } catch (error) {
-    if (error?.name === "AbortError") return false;
-  }
-  downloadCalendarFile(plan, options);
-  showToast("Calendar file downloaded");
-  return true;
+  showToast("Downloaded — open the file and tap Add");
 }
 
 function openCalendarSheet(plan, links) {
   const returnFocus = document.activeElement;
   const sheet = document.createElement("div");
   sheet.className = "sheet-backdrop";
-  sheet.innerHTML = `<section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-sheet-title"><div class="sheet-handle" aria-hidden="true"></div><div class="sheet-header"><div><h2 id="calendar-sheet-title">Add to calendar</h2><p>Choose only what would be useful.</p></div><button class="icon-button" id="calendar-sheet-close" type="button" aria-label="Close calendar options">×</button></div><fieldset class="calendar-choices"><legend>Include</legend>${links.reminder ? '<label><input id="include-reminder" type="checkbox" checked><span><strong>Plan reminder</strong><small>Weekdays until your review date</small></span></label>' : ""}<label><input id="include-review" type="checkbox" checked><span><strong>Review check-in</strong><small>One event on your review date</small></span></label></fieldset><label class="field-label" for="alert-minutes">Alert for the device calendar file</label><select class="field" id="alert-minutes"><option value="">No alert</option><option value="0">At the scheduled time</option><option value="10" selected>10 minutes before</option><option value="30">30 minutes before</option></select><div class="sheet-options section-gap"><button id="device-calendar" type="button"><strong>Device calendar</strong><span>Open a calendar app or download a calendar file</span></button><a id="google-review" href="${escapeHtml(links.google)}" rel="noopener"><strong>Google Calendar</strong><span>Review how it went</span></a>${links.reminder ? `<a id="google-reminder" href="${escapeHtml(links.reminder.url)}" rel="noopener"><strong>Google Calendar</strong><span>Plan reminder until your review date</span></a>` : ""}<a id="outlook-review" href="${escapeHtml(links.outlook)}" rel="noopener"><strong>Outlook Calendar</strong><span>Review how it went</span></a></div><p class="note">Calendar import stays optional. Scores, signs, drivers and messages are never included. Your calendar will ask you to confirm the event.</p></section>`;
+  sheet.innerHTML = `<section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-sheet-title"><div class="sheet-handle" aria-hidden="true"></div><div class="sheet-header"><div><h2 id="calendar-sheet-title">Save calendar reminders</h2><p>Google opens in your browser. Apple and other calendars use a download.</p></div><button class="icon-button" id="calendar-sheet-close" type="button" aria-label="Close calendar options">×</button></div><fieldset class="calendar-choices"><legend>Include in the downloaded file</legend>${links.reminder ? '<label><input id="include-reminder" type="checkbox" checked><span><strong>Plan reminder</strong><small>Weekdays until your review date</small></span></label>' : ""}<label><input id="include-review" type="checkbox" checked><span><strong>Review check-in</strong><small>One event on your review date</small></span></label></fieldset><label class="field-label" for="alert-minutes">Alert in the downloaded file</label><select class="field" id="alert-minutes"><option value="">No alert</option><option value="0">At the scheduled time</option><option value="10" selected>10 minutes before</option><option value="30">30 minutes before</option></select><div class="sheet-options section-gap"><a id="google-review" href="${escapeHtml(links.google)}" rel="noopener"><strong>Add review to Google Calendar</strong><span>Opens Google Calendar to confirm the event</span></a>${links.reminder ? `<a id="google-reminder" href="${escapeHtml(links.reminder.url)}" rel="noopener"><strong>Add reminder to Google Calendar</strong><span>Opens Google Calendar to confirm the weekdays</span></a>` : ""}<button id="download-calendar" type="button"><strong>Download for Apple or Outlook</strong><span>Open the downloaded file, then tap Add</span></button></div><p class="note">Your browser cannot reliably open a calendar app directly. The download is the standard calendar file used by Apple Calendar, Outlook and other calendar apps.</p></section>`;
   document.body.append(sheet);
   document.body.style.overflow = "hidden";
   const close = () => {
@@ -325,15 +313,15 @@ function openCalendarSheet(plan, links) {
     const includeReview = sheet.querySelector("#include-review").checked;
     const includeReminder = sheet.querySelector("#include-reminder")?.checked ?? false;
     sheet.querySelector("#google-review").hidden = !includeReview;
-    sheet.querySelector("#outlook-review").hidden = !includeReview;
     if (sheet.querySelector("#google-reminder")) sheet.querySelector("#google-reminder").hidden = !includeReminder;
-    sheet.querySelector("#device-calendar").disabled = !includeReview && !includeReminder;
+    sheet.querySelector("#download-calendar").disabled = !includeReview && !includeReminder;
   };
   sheet.querySelectorAll('input[type="checkbox"]').forEach(input => input.addEventListener("change", updateChoices));
-  sheet.querySelector("#device-calendar").addEventListener("click", async () => {
+  sheet.querySelector("#download-calendar").addEventListener("click", () => {
     const rawAlert = sheet.querySelector("#alert-minutes").value;
     const options = { includeReview: sheet.querySelector("#include-review").checked, includeReminder: sheet.querySelector("#include-reminder")?.checked ?? false, alertMinutes: rawAlert === "" ? null : Number(rawAlert) };
-    if (await openDeviceCalendar(plan, options)) close();
+    downloadCalendarFile(plan, options);
+    close();
   });
   sheet.addEventListener("keydown", event => {
     if (event.key === "Escape") { close(); return; }
@@ -354,7 +342,7 @@ function renderPlanResult(plan, stored = true) {
   const drivers = driversForPlan(plan);
   const review = lines[4][1];
   const links = calendarLinks(plan, appUrl());
-  app.innerHTML = `<section class="result"><div class="top"><span></span><span></span><button class="icon-button" id="plan-result-close" type="button" aria-label="Close plan">×</button></div><h1 data-focus-heading tabindex="-1">Your plan</h1><p class="lead">One manageable experiment. You do not need to do it perfectly.</p>${stored ? "" : '<p class="status">History is off, but you can still copy your plan.</p>'}<div class="hero red"><span class="eyebrow">Your focus this week</span><div class="zone-title">${escapeHtml(focusForDriver(drivers))}</div><p>Try one small change, then notice what helped.</p></div><section class="card experiment-card"><div class="label">Your 7-day experiment</div><h2>${escapeHtml(action.title)}</h2><p>${escapeHtml(action.instruction)}</p><div class="experiment-meta"><span>${escapeHtml(`${action.duration} min`)}</span><span>${escapeHtml(action.frequency)}</span>${plan.reminderTime ? `<span>Reminder ${escapeHtml(plan.reminderTime)}</span>` : ""}</div></section><div class="card"><div class="label">What you noticed</div><div class="value">${escapeHtml(plan.signs.join(", "))}</div></div><div class="card"><div class="label">What may be driving it</div><div class="value">${escapeHtml(drivers.join(", "))}</div></div><div class="card"><div class="label">Do now: message to ${escapeHtml(plan.person.toLowerCase())}</div><div class="value message">${escapeHtml(message)}</div><button class="copy-link" id="copy-message" type="button">${ICON_COPY} Copy message</button></div><div class="card review-card"><div class="label">Review how it went</div><div class="value">${escapeHtml(review)}</div><p class="note">Look back without judging yourself, then retake the check-in.</p></div><div class="section-gap stack"><button class="cta" id="calendar-toggle" type="button">Add to calendar</button><button class="ghost" id="copy-plan" type="button">Copy my plan</button></div><p class="note">Calendar events include only the change you chose and a neutral review event. Your scores, signs, drivers and message stay in Burnies.</p></section>`;
+  app.innerHTML = `<section class="result"><div class="top"><span></span><span></span><button class="icon-button" id="plan-result-close" type="button" aria-label="Close plan">×</button></div><h1 data-focus-heading tabindex="-1">Your plan</h1><p class="lead">One manageable experiment. You do not need to do it perfectly.</p>${stored ? "" : '<p class="status">History is off, but you can still copy your plan.</p>'}<div class="hero red"><span class="eyebrow">Your focus this week</span><div class="zone-title">${escapeHtml(focusForDriver(drivers))}</div><p>Try one small change, then notice what helped.</p></div><section class="card experiment-card"><div class="label">Your 7-day experiment</div><h2>${escapeHtml(action.title)}</h2><p>${escapeHtml(action.instruction)}</p><div class="experiment-meta"><span>${escapeHtml(`${action.duration} min`)}</span><span>${escapeHtml(action.frequency)}</span>${plan.reminderTime ? `<span>Reminder ${escapeHtml(plan.reminderTime)}</span>` : ""}</div></section><div class="card"><div class="label">Do now: message to ${escapeHtml(plan.person.toLowerCase())}</div><div class="value message">${escapeHtml(message)}</div><button class="copy-link" id="copy-message" type="button">${ICON_COPY} Copy message</button></div><div class="card review-card"><div class="label">Review how it went</div><div class="value">${escapeHtml(review)}</div><p class="note">Look back without judging yourself, then retake the check-in.</p></div><div class="section-gap stack"><button class="cta" id="calendar-toggle" type="button">Save calendar reminders</button><button class="ghost" id="copy-plan" type="button">Copy my plan</button></div><p class="note">Calendar events include only the change you chose and a neutral review event. Your scores, signs, drivers and message stay in Burnies.</p></section>`;
   app.querySelector("#plan-result-close").addEventListener("click", renderHome);
   app.querySelector("#copy-message").addEventListener("click", () => copyText(message, "Message copied"));
   app.querySelector("#copy-plan").addEventListener("click", () => copyText(`My Burnies plan\n${lines.map(([label, value]) => `${label}: ${value}`).join("\n")}`, "Plan copied"));
