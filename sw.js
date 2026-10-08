@@ -1,4 +1,4 @@
-const CACHE_NAME = "burnies-v4";
+const CACHE_NAME = "burnies-v9";
 const SHELL = [
   "./", "./index.html", "./styles.css", "./manifest.webmanifest",
   "./js/app.js", "./js/data.js", "./js/scoring.js", "./js/storage.js", "./js/calendar.js",

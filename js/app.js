@@ -71,7 +71,7 @@ async function renderHome() {
   currentScreen = "home";
   const available = await historyAvailable();
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !isStandalone() && storageGet("ios-install-dismissed") !== "1";
-  app.innerHTML = `<div class="page"><header class="app-header"><span class="brand-word">Burnies</span><button class="icon-button" id="theme" type="button" aria-label="Change colour theme">◐</button></header><h1 class="home-heading" data-focus-heading tabindex="-1">How are things feeling?</h1><p class="home-copy">Take a quiet check-in, make a small plan, or look back at your own pattern.</p><div class="stack"><button class="tile primary-tile" id="home-checkin" type="button"><strong>Check in</strong><span>12 short statements · about 2 minutes</span></button><button class="tile" id="home-plan" type="button"><strong>My plan</strong><span>Choose one change for this week</span></button><button class="tile" id="home-history" type="button"><strong>History</strong><span>${available ? "Saved on this device only" : "History is off on this device"}</span></button></div>${installPrompt && !isStandalone() ? '<button class="ghost section-gap" id="install-app" type="button">Install Burnies</button>' : ""}${ios ? '<section class="install-card"><button class="icon-button" id="dismiss-ios" type="button" aria-label="Dismiss install instructions">×</button><h3>Add Burnies to your Home Screen</h3><p>In Safari, tap Share, then Add to Home Screen. It will work offline after the first visit.</p></section>' : ""}<nav class="home-links" aria-label="More"><button id="home-support" type="button">Support</button><button id="home-about" type="button">Privacy</button></nav></div>`;
+  app.innerHTML = `<header class="app-header"><span class="brand-word">Burnies</span><button class="icon-button" id="theme" type="button" aria-label="Change colour theme">◐</button></header><div class="page"><h1 class="home-heading" data-focus-heading tabindex="-1">How are things feeling?</h1><p class="home-copy">Take a quiet check-in, make a small plan, or look back at your own pattern.</p><div class="stack"><button class="tile primary-tile" id="home-checkin" type="button"><strong>Check in</strong><span>12 short statements · about 2 minutes</span></button><button class="tile" id="home-plan" type="button"><strong>My plan</strong><span>Choose one change for this week</span></button><button class="tile" id="home-history" type="button"><strong>History</strong><span>${available ? "Saved on this device only" : "History is off on this device"}</span></button></div>${installPrompt && !isStandalone() ? '<button class="ghost section-gap" id="install-app" type="button">Install Burnies</button>' : ""}${ios ? '<section class="install-card"><button class="icon-button" id="dismiss-ios" type="button" aria-label="Dismiss install instructions">×</button><h3>Add Burnies to your Home Screen</h3><p>In Safari, tap Share, then Add to Home Screen. It will work offline after the first visit.</p></section>' : ""}<nav class="home-links" aria-label="More"><button id="home-support" type="button">Support</button><button id="home-about" type="button">Privacy</button></nav></div>`;
   app.querySelector("#home-checkin").addEventListener("click", renderCheckInIntro);
   app.querySelector("#home-plan").addEventListener("click", renderPlanIntro);
   app.querySelector("#home-history").addEventListener("click", renderHistory);
@@ -242,8 +242,12 @@ async function finishPlan() {
   renderPlanResult(plan, stored);
 }
 
+function calendarFile(plan) {
+  return new File([createIcs(plan, appUrl())], "burnies-plan.ics", { type: "text/calendar" });
+}
+
 function downloadCalendarFile(plan) {
-  const blob = new Blob([createIcs(plan, appUrl())], { type: "text/calendar;charset=utf-8" });
+  const blob = calendarFile(plan);
   const anchor = document.createElement("a");
   anchor.href = URL.createObjectURL(blob);
   anchor.download = "burnies-plan.ics";
@@ -251,11 +255,26 @@ function downloadCalendarFile(plan) {
   setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
 }
 
+async function openDeviceCalendar(plan) {
+  const file = calendarFile(plan);
+  try {
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Burnies calendar reminders" });
+      return true;
+    }
+  } catch (error) {
+    if (error?.name === "AbortError") return false;
+  }
+  downloadCalendarFile(plan);
+  showToast("Calendar file downloaded");
+  return true;
+}
+
 function openCalendarSheet(plan, links) {
   const returnFocus = document.activeElement;
   const sheet = document.createElement("div");
   sheet.className = "sheet-backdrop";
-  sheet.innerHTML = `<section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-sheet-title"><div class="sheet-handle" aria-hidden="true"></div><div class="sheet-header"><div><h2 id="calendar-sheet-title">Add to calendar</h2><p>Choose where to add your review or reminder.</p></div><button class="icon-button" id="calendar-sheet-close" type="button" aria-label="Close calendar options">×</button></div><div class="sheet-options"><a href="${escapeHtml(links.google)}" target="_blank" rel="noopener"><strong>Google Calendar</strong><span>Review how it went</span></a>${links.reminder ? `<a href="${escapeHtml(links.reminder.url)}" target="_blank" rel="noopener"><strong>Google Calendar</strong><span>Weekday reminder</span></a>` : ""}<a href="${escapeHtml(links.outlook)}" target="_blank" rel="noopener"><strong>Outlook Calendar</strong><span>Review how it went</span></a>${isStandalone() ? '<button id="download-ics" type="button"><strong>Calendar file</strong><span>Apple Calendar and other apps</span></button>' : ""}</div><p class="note">Calendar events contain only the neutral review details described below.</p></section>`;
+  sheet.innerHTML = `<section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-sheet-title"><div class="sheet-handle" aria-hidden="true"></div><div class="sheet-header"><div><h2 id="calendar-sheet-title">Add to calendar</h2><p>Choose where to add your review or reminder.</p></div><button class="icon-button" id="calendar-sheet-close" type="button" aria-label="Close calendar options">×</button></div><div class="sheet-options"><button id="device-calendar" type="button"><strong>Device calendar</strong><span>Open a calendar app or download a calendar file</span></button><a href="${escapeHtml(links.google)}" rel="noopener"><strong>Google Calendar</strong><span>Review how it went</span></a>${links.reminder ? `<a href="${escapeHtml(links.reminder.url)}" rel="noopener"><strong>Google Calendar</strong><span>Weekday reminder</span></a>` : ""}<a href="${escapeHtml(links.outlook)}" rel="noopener"><strong>Outlook Calendar</strong><span>Review how it went</span></a></div><p class="note">Your device decides which installed apps can open these links. Calendar events contain only the neutral details described below.</p></section>`;
   document.body.append(sheet);
   document.body.style.overflow = "hidden";
   const close = () => {
@@ -266,7 +285,7 @@ function openCalendarSheet(plan, links) {
   sheet.querySelector("#calendar-sheet-close").addEventListener("click", close);
   sheet.addEventListener("click", event => { if (event.target === sheet) close(); });
   sheet.querySelectorAll("a").forEach(link => link.addEventListener("click", () => setTimeout(close, 0)));
-  sheet.querySelector("#download-ics")?.addEventListener("click", () => { downloadCalendarFile(plan); close(); });
+  sheet.querySelector("#device-calendar").addEventListener("click", async () => { if (await openDeviceCalendar(plan)) close(); });
   sheet.addEventListener("keydown", event => {
     if (event.key === "Escape") { close(); return; }
     if (event.key !== "Tab") return;
