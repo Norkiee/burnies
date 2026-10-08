@@ -1,6 +1,6 @@
 import { QUESTIONS, ANSWERS, ZONES, SUBSCALES, SIGNS, DRIVERS, CHANGES, PEOPLE } from "./data.js";
 import { scoreAnswers, subscalePointers } from "./scoring.js";
-import { historyAvailable, saveCheckIn, savePlan, updatePlan, getCheckIns, getPlans, clearHistory, exportHistory, importHistory } from "./storage.js";
+import { historyAvailable, saveCheckIn, savePlan, updatePlan, getCheckIns, getPlans, clearHistory } from "./storage.js";
 import { localDate, parseLocal, calendarLinks, createIcs } from "./calendar.js";
 
 const app = document.querySelector("#app");
@@ -131,13 +131,28 @@ function renderCalculating() {
   focusHeading();
 }
 
-function trendChart(records) {
+function trendChart(records, compact = false) {
   if (records.length < 2) return "";
-  const width = 420, height = 150, pad = 20;
-  const x = index => pad + index * ((width - pad * 2) / Math.max(records.length - 1, 1));
-  const y = value => height - pad - ((value - 1) / 4) * (height - pad * 2);
-  const points = records.map((record, index) => `${x(index)},${y(record.total)}`).join(" ");
-  return `<svg class="trend" viewBox="0 0 ${width} ${height}" role="img" aria-label="Your check-in scores over time, from ${records[0].total.toFixed(2)} to ${records.at(-1).total.toFixed(2)}"><rect x="${pad}" y="${y(2.53)}" width="${width - pad * 2}" height="${y(1) - y(2.53)}" fill="var(--green)" opacity=".12"/><rect x="${pad}" y="${y(2.95)}" width="${width - pad * 2}" height="${y(2.53) - y(2.95)}" fill="var(--orange)" opacity=".14"/><rect x="${pad}" y="${y(5)}" width="${width - pad * 2}" height="${y(2.95) - y(5)}" fill="var(--zone-red)" opacity=".12"/><polyline points="${points}" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${records.map((record, index) => `<circle cx="${x(index)}" cy="${y(record.total)}" r="5" fill="var(--bg)" stroke="var(--ink)" stroke-width="3"/>`).join("")}</svg>`;
+  const shown = records.slice(-6);
+  const width = 420, height = 210, left = 34, right = 12, top = 14, bottom = 34;
+  const plotBottom = height - bottom;
+  const x = index => left + index * ((width - left - right) / Math.max(shown.length - 1, 1));
+  const y = value => top + ((5 - value) / 4) * (plotBottom - top);
+  const coordinates = shown.map((record, index) => [x(index), y(record.total)]);
+  const line = coordinates.slice(1).reduce((path, point, index) => {
+    const previous = coordinates[index];
+    const middle = (previous[0] + point[0]) / 2;
+    return `${path} C ${middle} ${previous[1]}, ${middle} ${point[1]}, ${point[0]} ${point[1]}`;
+  }, `M ${coordinates[0][0]} ${coordinates[0][1]}`);
+  const area = `${line} L ${coordinates.at(-1)[0]} ${plotBottom} L ${coordinates[0][0]} ${plotBottom} Z`;
+  const dayKeys = shown.map(record => localDate(new Date(record.takenAt)));
+  const oneDay = new Set(dayKeys).size === 1;
+  const labels = shown.map(record => oneDay
+    ? new Date(record.takenAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+    : new Date(record.takenAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" }));
+  const latest = shown.at(-1).total.toFixed(2);
+  const grid = [5, 3, 1].map(value => `<line x1="${left}" y1="${y(value)}" x2="${width - right}" y2="${y(value)}"/><text x="${left - 8}" y="${y(value) + 4}" text-anchor="end">${value.toFixed(1)}</text>`).join("");
+  return `<section class="trend-panel${compact ? " compact" : ""}"><div class="trend-head"><h3>${compact ? "Trend" : "Check-in trend"}</h3><span>Latest ${latest}</span></div><svg class="trend" viewBox="0 0 ${width} ${height}" role="img" aria-label="Your recent check-in scores, from ${shown[0].total.toFixed(2)} to ${latest}"><defs><linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--ink)" stop-opacity=".24"/><stop offset="100%" stop-color="var(--ink)" stop-opacity="0"/></linearGradient></defs><g class="trend-grid">${grid}</g><path d="${area}" fill="url(#trend-fill)"/><path class="trend-line" d="${line}"/>${coordinates.map(([cx, cy]) => `<circle class="trend-point" cx="${cx}" cy="${cy}" r="4"/>`).join("")}<g class="trend-labels">${labels.map((label, index) => `<text x="${x(index)}" y="${height - 8}" text-anchor="middle">${escapeHtml(label)}</text>`).join("")}</g></svg></section>`;
 }
 
 async function renderCheckInResult() {
@@ -152,7 +167,7 @@ async function renderCheckInResult() {
   const pointers = subscalePointers(result.sub);
   const plans = await getPlans();
   const duePlan = [...plans].reverse().find(plan => !plan.outcome && new Date(plan.reviewAt) <= new Date(record.takenAt));
-  const comparison = previous ? `<section class="card"><h3>Your pattern</h3><div class="comparison section-gap"><div><span class="label">Last time</span><strong>${previous.total.toFixed(2)}</strong></div><div class="difference">${Math.abs(record.total - previous.total).toFixed(2)} ${record.total > previous.total ? "higher" : record.total < previous.total ? "lower" : "the same"}</div><div><span class="label">Now</span><strong>${record.total.toFixed(2)}</strong></div></div>${trendChart(all)}<p class="note">Small changes between checks are normal. Look for the pattern over several checks.</p></section>` : "";
+  const comparison = previous ? `<section class="card"><h3>Your pattern</h3><div class="comparison section-gap"><div><span class="label">Last time</span><strong>${previous.total.toFixed(2)}</strong></div><div class="difference">${Math.abs(record.total - previous.total).toFixed(2)} ${record.total > previous.total ? "higher" : record.total < previous.total ? "lower" : "the same"}</div><div><span class="label">Now</span><strong>${record.total.toFixed(2)}</strong></div></div>${trendChart(all, true)}<p class="note">Small changes between checks are normal. Look for the pattern over several checks.</p></section>` : "";
   const outcome = duePlan ? `<section class="card" id="outcome-card"><span class="label">Last time you planned</span><div class="value">${escapeHtml(duePlan.change)}</div><p class="note">Did it stick?</p><div class="outcome-options"><button type="button" data-outcome="stuck">Yes</button><button type="button" data-outcome="partly">Partly</button><button type="button" data-outcome="not">Not yet</button></div></section>` : "";
   app.innerHTML = `<section class="result"><div class="top"><span></span><span></span><button class="icon-button" id="result-close" type="button" aria-label="Close results">×</button></div><h1 data-focus-heading tabindex="-1">Your results</h1><p class="lead">Based on the short work-related Burnout Assessment Tool (BAT-12).</p>${stored ? "" : '<p class="status">History is off, but the rest of the app still works.</p>'}<div class="hero ${record.zone}"><span class="eyebrow">Overall score</span><div class="score">${record.total.toFixed(2)}<small> / 5</small></div><div class="zone-title">${ZONES[record.zone].label}</div><p>${ZONES[record.zone].description}</p></div>${comparison}${outcome}<section class="section-gap"><h2 style="font-size:22px;margin-bottom:12px">Where to look first</h2>${pointers.map(pointer => `<div class="card"><div class="card-title"><span>${escapeHtml(pointer.label)}</span><span class="badge ${pointer.zone}">${pointer.score.toFixed(2)}</span></div></div>`).join("")}</section><section class="card support-card"><h3>If it already feels heavy</h3><p>Talk to someone you trust, your manager, or a doctor or counselor. A professional can tell burnout apart from depression and other conditions.</p></section><p class="note">This survey estimates burnout complaints; it does not provide a diagnosis. Its risk zones were developed for Flemish employees, so use them as a guide. If you feel unwell, speak to a health professional.</p><div class="stack"><button class="cta" id="result-plan" type="button">Build my plan</button><button class="ghost" id="result-retake" type="button">Take it again</button></div><p class="citation">Source: Schaufeli, W. B., Desart, S. &amp; De Witte, H. (2020), <em>Burnout Assessment Tool (BAT)—Development, Validity and Reliability</em>, and the BAT user manual version 2.0, KU Leuven.</p></section>`;
   app.querySelector("#result-close").addEventListener("click", renderHome);
@@ -314,12 +329,9 @@ async function renderHistory() {
   const [checkins, plans] = await Promise.all([getCheckIns(), getPlans()]);
   const checkInMarkup = [...checkins].reverse().map(record => `<div class="card history-item"><div><strong>${record.total.toFixed(2)} · ${escapeHtml(ZONES[record.zone].label)}</strong><br><time datetime="${record.takenAt}">${new Date(record.takenAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</time></div><span class="badge ${record.zone}">${record.zone}</span></div>`).join("");
   const planMarkup = [...plans].reverse().map(plan => `<div class="card history-item"><div><strong>${escapeHtml(plan.change)}</strong><br><time datetime="${plan.createdAt}">${new Date(plan.createdAt).toLocaleDateString("en-GB", { dateStyle: "medium" })}</time></div><span class="badge">${plan.outcome ? escapeHtml(plan.outcome === "stuck" ? "Yes" : plan.outcome === "not" ? "Not yet" : "Partly") : "Awaiting review"}</span></div>`).join("");
-  app.innerHTML = `${header("History")}<section class="page"><h1 data-focus-heading tabindex="-1">Your history</h1><p class="lead">Saved on this device only. Your scores are compared only with your own previous check-ins.</p>${available ? "" : '<p class="status">History is off on this device. Check-ins and plans still work, but completed entries cannot be saved.</p>'}<section class="history-group"><h2>Check-ins</h2>${checkInMarkup || '<div class="history-empty">No completed check-ins yet.</div>'}${checkins.length > 1 ? trendChart(checkins) : ""}</section><section class="history-group"><h2>Plans</h2>${planMarkup || '<div class="history-empty">No completed plans yet.</div>'}</section><div class="stack"><button class="ghost" id="copy-history" type="button" ${available ? "" : "disabled"}>Copy my history</button><button class="ghost" id="show-import" type="button" ${available ? "" : "disabled"}>Import a backup</button><div id="import-panel" hidden><label class="field-label" for="import-text">Paste a history backup</label><textarea class="field" id="import-text" spellcheck="false"></textarea><button class="cta section-gap" id="import-history" type="button">Import and merge</button></div><button class="danger" id="clear-history" type="button" ${(checkins.length || plans.length) && available ? "" : "disabled"}>Clear my history</button></div></section>`;
+  app.innerHTML = `${header("History")}<section class="page"><h1 data-focus-heading tabindex="-1">Your history</h1><p class="lead">Saved on this device only. Your scores are compared only with your own previous check-ins.</p>${available ? "" : '<p class="status">History is off on this device. Check-ins and plans still work, but completed entries cannot be saved.</p>'}<section class="history-group"><h2>Check-ins</h2>${checkins.length > 1 ? trendChart(checkins) : ""}${checkInMarkup || '<div class="history-empty">No completed check-ins yet.</div>'}</section><section class="history-group"><h2>Plans</h2>${planMarkup || '<div class="history-empty">No completed plans yet.</div>'}</section><button class="danger" id="clear-history" type="button" ${(checkins.length || plans.length) && available ? "" : "disabled"}>Clear my history</button></section>`;
   wireHeader();
-  app.querySelector("#copy-history").addEventListener("click", async () => copyText(await exportHistory(), "History copied"));
-  app.querySelector("#show-import").addEventListener("click", () => { const panel = app.querySelector("#import-panel"); panel.hidden = !panel.hidden; if (!panel.hidden) app.querySelector("#import-text").focus(); });
-  app.querySelector("#import-history").addEventListener("click", async () => { try { const count = await importHistory(app.querySelector("#import-text").value); showToast(`Imported ${count.checkins} check-ins and ${count.plans} plans`); renderHistory(); } catch (error) { showToast(error.message || "That backup could not be imported"); } });
-  app.querySelector("#clear-history").addEventListener("click", () => showDialog({ title: "Clear all history?", text: "This removes every saved check-in and plan from this device. This cannot be undone unless you copied a backup.", confirmLabel: "Clear history", dangerous: true, onConfirm: async () => { try { await clearHistory(); showToast("History cleared"); renderHistory(); } catch { showToast("History could not be cleared"); } } }));
+  app.querySelector("#clear-history").addEventListener("click", () => showDialog({ title: "Clear all history?", text: "This removes every saved check-in and plan from this device. This cannot be undone.", confirmLabel: "Clear history", dangerous: true, onConfirm: async () => { try { await clearHistory(); showToast("History cleared"); renderHistory(); } catch { showToast("History could not be cleared"); } } }));
   focusHeading();
 }
 
