@@ -1,7 +1,7 @@
-const CACHE_NAME = "burnies-v20";
+const CACHE_NAME = "burnies-v26";
 const SHELL = [
-  "./", "./index.html", "./styles.css", "./manifest.webmanifest",
-  "./js/app.js", "./js/data.js", "./js/scoring.js", "./js/storage.js", "./js/calendar.js",
+  "./", "./index.html", "./styles.css?v=26", "./manifest.webmanifest",
+  "./js/app.js?v=26", "./js/data.js?v=26", "./js/plan.js?v=26", "./js/scoring.js?v=26", "./js/storage.js?v=26", "./js/calendar.js?v=26",
   "./assets/fonts/InstrumentSans-Medium.woff2", "./assets/fonts/InstrumentSans-SemiBold.woff2", "./assets/fonts/InstrumentSans-Bold.woff2",
   "./assets/icons/favicon.svg", "./assets/icons/icon-192.png", "./assets/icons/icon-512.png",
   "./assets/icons/icon-maskable-512.png", "./assets/icons/apple-touch-icon.png"

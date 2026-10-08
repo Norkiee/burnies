@@ -1,7 +1,8 @@
-import { QUESTIONS, ANSWERS, ZONES, SUBSCALES, SIGNS, DRIVERS, CHANGES, PEOPLE } from "./data.js";
-import { scoreAnswers, subscalePointers } from "./scoring.js";
-import { historyAvailable, saveCheckIn, savePlan, updatePlan, getCheckIns, getPlans, clearHistory } from "./storage.js";
-import { localDate, parseLocal, calendarLinks, createIcs } from "./calendar.js";
+import { QUESTIONS, ANSWERS, ZONES, SUBSCALES, SIGNS, DRIVERS, ACTIONS, PEOPLE } from "./data.js?v=26";
+import { scoreAnswers, subscalePointers } from "./scoring.js?v=26";
+import { historyAvailable, saveCheckIn, savePlan, updatePlan, getCheckIns, getPlans, clearHistory } from "./storage.js?v=26";
+import { localDate, parseLocal, calendarLinks, createIcs } from "./calendar.js?v=26";
+import { suggestActions, actionDetails, driversForPlan, focusForDriver } from "./plan.js?v=26";
 
 const app = document.querySelector("#app");
 const toast = document.querySelector("#toast");
@@ -24,7 +25,7 @@ const appUrl = () => new URL("./", location.href).href;
 const directStart = () => new URLSearchParams(location.search).get("start");
 
 function clearDirectStart() {
-  if (directStart() !== "checkin") return;
+  if (!directStart()) return;
   const url = new URL(location.href);
   url.searchParams.delete("start");
   history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
@@ -80,11 +81,15 @@ async function renderHome() {
   currentScreen = "home";
   clearDirectStart();
   const available = await historyAvailable();
+  const plans = available ? await getPlans() : [];
+  const duePlan = [...plans].reverse().find(plan => !plan.outcome && new Date(plan.reviewAt) <= new Date());
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !isStandalone() && storageGet("ios-install-dismissed") !== "1";
-  app.innerHTML = `<header class="app-header"><span class="brand-word">Burnies</span><button class="icon-button" id="theme" type="button" aria-label="Change colour theme">◐</button></header><div class="page"><h1 class="home-heading" data-focus-heading tabindex="-1">How are things feeling?</h1><p class="home-copy">Take a quiet check-in, make a small plan, or look back at your own pattern.</p><div class="stack"><button class="tile primary-tile" id="home-checkin" type="button"><strong>Check in</strong><span>12 short statements · about 2 minutes</span>${TILE_ARROW}</button><button class="tile" id="home-plan" type="button"><strong>My plan</strong><span>Choose one change for this week</span>${TILE_ARROW}</button><button class="tile" id="home-history" type="button"><strong>History</strong><span>${available ? "Saved on this device only" : "History is off on this device"}</span>${TILE_ARROW}</button></div>${installPrompt && !isStandalone() ? '<button class="ghost section-gap" id="install-app" type="button">Install Burnies</button>' : ""}${ios ? '<section class="install-card"><button class="icon-button" id="dismiss-ios" type="button" aria-label="Dismiss install instructions">×</button><h3>Add Burnies to your Home Screen</h3><p>In Safari, tap Share, then Add to Home Screen. It will work offline after the first visit.</p></section>' : ""}<nav class="home-links" aria-label="More"><button id="home-support" type="button">Support</button><button id="home-about" type="button">Privacy</button></nav></div>`;
+  const dueMarkup = duePlan ? `<section class="due-card"><span class="label">Your plan is ready for review</span><strong>${escapeHtml(duePlan.change)}</strong><p>Look back without judging yourself, then take the check-in again.</p><button class="ghost" id="home-review" type="button">Review and check in</button></section>` : "";
+  app.innerHTML = `<header class="app-header"><span class="brand-word">Burnies</span><button class="icon-button" id="theme" type="button" aria-label="Change colour theme">◐</button></header><div class="page"><h1 class="home-heading" data-focus-heading tabindex="-1">How are things feeling?</h1><p class="home-copy">Take a quiet check-in, make a small plan, or look back at your own pattern.</p>${dueMarkup}<div class="stack"><button class="tile primary-tile" id="home-checkin" type="button"><strong>Check in</strong><span>12 short statements · about 2 minutes</span>${TILE_ARROW}</button><button class="tile" id="home-plan" type="button"><strong>My plan</strong><span>Choose one change for this week</span>${TILE_ARROW}</button><button class="tile" id="home-history" type="button"><strong>History</strong><span>${available ? "Saved on this device only" : "History is off on this device"}</span>${TILE_ARROW}</button></div>${installPrompt && !isStandalone() ? '<button class="ghost section-gap" id="install-app" type="button">Install Burnies</button>' : ""}${ios ? '<section class="install-card"><button class="icon-button" id="dismiss-ios" type="button" aria-label="Dismiss install instructions">×</button><h3>Add Burnies to your Home Screen</h3><p>In Safari, tap Share, then Add to Home Screen. It will work offline after the first visit.</p></section>' : ""}<nav class="home-links" aria-label="More"><button id="home-support" type="button">Support</button><button id="home-about" type="button">Privacy</button></nav></div>`;
   app.querySelector("#home-checkin").addEventListener("click", renderCheckInIntro);
-  app.querySelector("#home-plan").addEventListener("click", renderPlanIntro);
+  app.querySelector("#home-plan").addEventListener("click", () => renderPlanIntro());
   app.querySelector("#home-history").addEventListener("click", renderHistory);
+  app.querySelector("#home-review")?.addEventListener("click", renderCheckInIntro);
   app.querySelector("#home-support").addEventListener("click", renderSupport);
   app.querySelector("#home-about").addEventListener("click", renderPrivacy);
   app.querySelector("#install-app")?.addEventListener("click", async () => { installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; renderHome(); });
@@ -103,14 +108,14 @@ function toggleTheme() {
 
 function renderPrivacy() {
   currentScreen = "privacy";
-  app.innerHTML = `${header("Privacy")}<section class="page"><h1 data-focus-heading tabindex="-1">Private by design</h1><p class="lead">There is no account, server database, analytics, tracking, or advertising.</p><div class="card"><h3>On this device</h3><p class="muted section-gap">Completed check-ins and plans are stored in your browser so you can review or clear them at any time.</p></div><div class="card"><h3>Calendar links</h3><p class="muted section-gap">Calendar links open only when you choose them. Review events use a neutral title. Your scores, signs, driver, and message are never included.</p></div><p class="note">Clearing browser data or removing the installed app may remove your history.</p></section>`;
+  app.innerHTML = `${header("Privacy")}<section class="page"><h1 data-focus-heading tabindex="-1">Private by design</h1><p class="lead">There is no account, server database, analytics, tracking, or advertising.</p><div class="card"><h3>On this device</h3><p class="muted section-gap">Completed check-ins and plans are stored in your browser so you can review or clear them at any time.</p></div><div class="card"><h3>Calendar links</h3><p class="muted section-gap">Calendar links open only when you choose them. Review events use a neutral title. Your scores, signs, drivers, and message are never included.</p></div><p class="note">Clearing browser data or removing the installed app may remove your history.</p></section>`;
   wireHeader(); focusHeading();
 }
 
 function renderSupport() {
   currentScreen = "support";
   app.innerHTML = `${header("Support")}<section class="page"><h1 data-focus-heading tabindex="-1">If it already feels heavy</h1><p class="lead">You do not have to work it out alone.</p><div class="card support-card"><h3>Talk to someone</h3><p>Speak to someone you trust, your manager, or a doctor or counselor. A professional can tell burnout apart from depression and other conditions.</p></div><div class="card support-card"><h3>Immediate danger</h3><p>If you are in immediate danger, contact local emergency services.</p></div><button class="cta section-gap" id="support-plan" type="button">Build my plan</button></section>`;
-  wireHeader(); app.querySelector("#support-plan").addEventListener("click", renderPlanIntro); focusHeading();
+  wireHeader(); app.querySelector("#support-plan").addEventListener("click", () => renderPlanIntro()); focusHeading();
 }
 
 function renderCheckInIntro() {
@@ -174,26 +179,27 @@ async function renderCheckInResult() {
   const all = [...before, record];
   const previous = before.at(-1);
   const pointers = subscalePointers(result.sub);
+  const assessmentFocus = [...pointers].sort((a, b) => b.score - a.score)[0]?.label || "";
   const plans = await getPlans();
   const duePlan = [...plans].reverse().find(plan => !plan.outcome && new Date(plan.reviewAt) <= new Date(record.takenAt));
   const comparison = previous ? `<section class="card"><h3>Your pattern</h3><div class="comparison section-gap"><div><span class="label">Last time</span><strong>${previous.total.toFixed(2)}</strong></div><div class="difference">${Math.abs(record.total - previous.total).toFixed(2)} ${record.total > previous.total ? "higher" : record.total < previous.total ? "lower" : "the same"}</div><div><span class="label">Now</span><strong>${record.total.toFixed(2)}</strong></div></div>${trendChart(all, true)}<p class="note">Small changes between checks are normal. Look for the pattern over several checks.</p></section>` : "";
   const outcome = duePlan ? `<section class="card" id="outcome-card"><span class="label">Last time you planned</span><div class="value">${escapeHtml(duePlan.change)}</div><p class="note">Did it stick?</p><div class="outcome-options"><button type="button" data-outcome="stuck">Yes</button><button type="button" data-outcome="partly">Partly</button><button type="button" data-outcome="not">Not yet</button></div></section>` : "";
   app.innerHTML = `<section class="result"><div class="top"><span></span><span></span><button class="icon-button" id="result-close" type="button" aria-label="Close results">×</button></div><h1 data-focus-heading tabindex="-1">Your results</h1><p class="lead">Based on the short work-related Burnout Assessment Tool (BAT-12).</p>${stored ? "" : '<p class="status">History is off, but the rest of the app still works.</p>'}<div class="hero ${record.zone}"><span class="eyebrow">Overall score</span><div class="score">${record.total.toFixed(2)}<small> / 5</small></div><div class="zone-title">${ZONES[record.zone].label}</div><p>${ZONES[record.zone].description}</p></div>${comparison}${outcome}<section class="section-gap"><h2 style="font-size:22px;margin-bottom:12px">Where to look first</h2>${pointers.map(pointer => `<div class="card"><div class="card-title"><span>${escapeHtml(pointer.label)}</span><span class="badge ${pointer.zone}">${pointer.score.toFixed(2)}</span></div></div>`).join("")}</section><section class="card support-card"><h3>If it already feels heavy</h3><p>Talk to someone you trust, your manager, or a doctor or counselor. A professional can tell burnout apart from depression and other conditions.</p></section><p class="note">This survey estimates burnout complaints; it does not provide a diagnosis. Its risk zones were developed for Flemish employees, so use them as a guide. If you feel unwell, speak to a health professional.</p><div class="stack"><button class="cta" id="result-plan" type="button">Build my plan</button><button class="ghost" id="result-retake" type="button">Take it again</button></div><p class="citation">Source: Schaufeli, W. B., Desart, S. &amp; De Witte, H. (2020), <em>Burnout Assessment Tool (BAT)—Development, Validity and Reliability</em>, and the BAT user manual version 2.0, KU Leuven.</p></section>`;
   app.querySelector("#result-close").addEventListener("click", renderHome);
-  app.querySelector("#result-plan").addEventListener("click", renderPlanIntro);
+  app.querySelector("#result-plan").addEventListener("click", () => renderPlanIntro({ assessmentZone: record.zone, assessmentFocus }));
   app.querySelector("#result-retake").addEventListener("click", renderCheckInIntro);
   app.querySelectorAll("[data-outcome]").forEach(button => button.addEventListener("click", async () => { duePlan.outcome = button.dataset.outcome; try { await updatePlan(duePlan); app.querySelector("#outcome-card").innerHTML = '<span class="label">Last time you planned</span><div class="value">Outcome saved on this device.</div>'; } catch { showToast("Could not save that outcome"); } }));
   focusHeading();
 }
 
-function freshPlan() {
+function freshPlan(context = {}) {
   const date = new Date(); date.setDate(date.getDate() + 7);
-  return { step: 0, signs: [], driver: "", change: "", reminderTime: "18:00", person: "", personName: "", reviewDate: localDate(date), reviewTime: "09:00" };
+  return { step: 0, signs: [], drivers: [], change: "", actionId: null, reminderTime: "18:00", person: "", personName: "", reviewDate: localDate(date), reviewTime: "09:00", ...context };
 }
 
-function renderPlanIntro() {
-  currentScreen = "plan-intro"; planState = freshPlan();
-  app.innerHTML = `<section class="intro">${DECO}<div><h1 data-focus-heading tabindex="-1">Your one-page plan</h1><p>Five quick steps, about three minutes. You finish with one small change, a message ready to send, and a reminder to review how it went.</p></div><div><p class="small">Your completed plan is saved on this device only. It is never sent to us. This is not medical advice.</p><button class="cta" id="start-plan" type="button">Start</button><button class="link-button" id="leave-plan" type="button" style="color:#fff;width:100%;margin-top:8px">Back home</button></div></section>`;
+function renderPlanIntro(context = {}) {
+  currentScreen = "plan-intro"; planState = freshPlan(context);
+  app.innerHTML = `<section class="intro">${DECO}<div><h1 data-focus-heading tabindex="-1">Your one-page plan</h1><p>Five quick steps, about three minutes. Choose one manageable change to try, then review how it went.</p></div><div><p class="small">Your completed plan is saved on this device only. It is never sent to us. This is not medical advice.</p><button class="cta" id="start-plan" type="button">Start</button><button class="link-button" id="leave-plan" type="button" style="color:#fff;width:100%;margin-top:8px">Back home</button></div></section>`;
   app.querySelector("#start-plan").addEventListener("click", renderPlanStep);
   app.querySelector("#leave-plan").addEventListener("click", renderHome);
   focusHeading();
@@ -201,13 +207,13 @@ function renderPlanIntro() {
 
 const PLAN_STEPS = [
   ["Which early signs do you notice?", "Pick any that are true for you right now."],
-  ["What is your top driver?", "Where does work mismatch you most? Pick one."],
-  ["One change for this week", "Pick one. Small is fine."],
+  ["What are your top drivers?", "Where does work mismatch you most? Pick any that fit."],
+  ["One change for this week", "These suggestions reflect the signs and drivers you selected. One is enough."],
   ["One person you will tell", "Saying it out loud to someone is the step people skip most."],
   ["When will you review how it went?", "Look back on the week, then retake the check-in."]
 ];
 function planStepValid() {
-  return [planState.signs.length > 0, !!planState.driver, !!planState.change.trim(), !!planState.person, !!planState.reviewDate][planState.step];
+  return [planState.signs.length > 0, planState.drivers.length > 0, !!planState.change.trim(), !!planState.person, !!planState.reviewDate][planState.step];
 }
 
 function renderPlanStep() {
@@ -215,10 +221,15 @@ function renderPlanStep() {
   const step = planState.step;
   let body = "";
   if (step === 0) body = `<div class="stack" role="group" aria-label="Early signs">${SIGNS.map(sign => option(sign, planState.signs.includes(sign), sign, "checkbox")).join("")}</div>`;
-  if (step === 1) body = `<div class="stack" role="radiogroup" aria-label="Top driver">${DRIVERS.map(([driver, detail]) => option(driver, planState.driver === driver, driver, "radio", detail)).join("")}</div>`;
-  if (step === 2) body = `<div class="stack" role="radiogroup" aria-label="Change this week">${CHANGES.map(change => option(change, planState.change === change, change)).join("")}</div><label class="field-label" for="custom-change">Or write your own</label><input class="field" id="custom-change" maxlength="90" placeholder="For example: no work messages after 7pm" value="${CHANGES.includes(planState.change) ? "" : escapeHtml(planState.change)}"><div class="count"><span id="change-count">${CHANGES.includes(planState.change) ? 0 : planState.change.length}</span>/90</div><label class="field-label" for="reminder-time">Weekday reminder time (clear it to skip)</label><input class="field" id="reminder-time" type="time" value="${escapeHtml(planState.reminderTime)}">`;
+  if (step === 1) body = `<div class="stack" role="group" aria-label="Top drivers">${DRIVERS.map(([driver, detail]) => option(driver, planState.drivers.includes(driver), driver, "checkbox", detail)).join("")}</div>`;
+  if (step === 2) {
+    const ranked = suggestActions(planState.drivers, planState.assessmentFocus, planState.signs);
+    const selected = ranked.find(action => action.title === planState.change);
+    const choices = actions => actions.map(action => option(action.title, planState.change === action.title, action.title, "radio", `${action.summary} · ${action.duration} min`)).join("");
+    body = `<div class="action-groups" role="radiogroup" aria-label="Change this week"><h3>Suggested for you</h3><div class="stack">${choices(ranked.slice(0, 3))}</div><h3>Other ideas</h3><div class="stack">${choices(ranked.slice(3))}</div></div>${selected ? `<section class="action-preview"><span>How to try it</span><p>${escapeHtml(selected.instruction)}</p><small>${escapeHtml(selected.frequency)}</small></section>` : ""}<label class="field-label" for="custom-change">Or write your own</label><input class="field" id="custom-change" maxlength="90" placeholder="For example: no work messages after 7pm" value="${ACTIONS.some(action => action.title === planState.change) ? "" : escapeHtml(planState.change)}"><div class="count"><span id="change-count">${ACTIONS.some(action => action.title === planState.change) ? 0 : planState.change.length}</span>/90</div><label class="field-label" for="reminder-time">Reminder time (clear it to skip)</label><input class="field" id="reminder-time" type="time" value="${escapeHtml(planState.reminderTime)}">`;
+  }
   if (step === 3) body = `<div class="stack" role="radiogroup" aria-label="Person to tell">${PEOPLE.map(person => option(person, planState.person === person, person)).join("")}</div><label class="field-label" for="person-name">First name (optional)</label><input class="field" id="person-name" maxlength="40" placeholder="First name" value="${escapeHtml(planState.personName)}"><div class="count"><span id="name-count">${planState.personName.length}</span>/40</div>`;
-  if (step === 4) body = `<div class="chips" role="group" aria-label="Quick review dates"><button class="chip" type="button" data-days="7">In 1 week</button><button class="chip" type="button" data-days="14">In 2 weeks</button><button class="chip" type="button" data-days="month">In 1 month</button></div><div class="two-column"><div><label class="field-label" for="review-date">Date</label><input class="field" id="review-date" type="date" min="${localDate(new Date())}" value="${escapeHtml(planState.reviewDate)}"></div><div><label class="field-label" for="review-time">Time</label><input class="field" id="review-time" type="time" value="${escapeHtml(planState.reviewTime)}"></div></div>`;
+  if (step === 4) body = `<div class="chips" role="group" aria-label="Quick review dates"><button class="chip" type="button" data-days="7">In 1 week</button><button class="chip" type="button" data-days="14">In 2 weeks</button><button class="chip" type="button" data-days="21">In 3 weeks</button></div><div class="two-column"><div><label class="field-label" for="review-date">Date</label><input class="field" id="review-date" type="date" min="${localDate(new Date())}" value="${escapeHtml(planState.reviewDate)}"></div><div><label class="field-label" for="review-time">Time</label><input class="field" id="review-time" type="time" value="${escapeHtml(planState.reviewTime)}"></div></div>`;
   app.innerHTML = `<section class="flow"><div class="top"><button class="icon-button" id="plan-back" type="button" aria-label="Previous step">‹</button><span>${step + 1}/${PLAN_STEPS.length}</span><button class="icon-button" id="plan-close" type="button" aria-label="Close plan">×</button></div><div class="bar" aria-hidden="true"><span style="width:${((step + 1) / PLAN_STEPS.length) * 100}%"></span></div><h1 data-focus-heading tabindex="-1">${PLAN_STEPS[step][0]}</h1><p class="context">${PLAN_STEPS[step][1]}</p>${body}<div class="flow-foot"><button class="cta" id="plan-next" type="button" ${planStepValid() ? "" : "disabled"}>${step === PLAN_STEPS.length - 1 ? "Show my plan" : "Next"}</button></div></section>`;
   app.querySelector("#plan-back").addEventListener("click", () => { if (step === 0) renderPlanIntro(); else { planState.step -= 1; renderPlanStep(); } });
   app.querySelector("#plan-close").addEventListener("click", () => showDialog({ title: "Leave this plan?", text: "Your unfinished choices will be cleared.", confirmLabel: "Leave", dangerous: true, onConfirm: renderHome }));
@@ -229,17 +240,17 @@ function renderPlanStep() {
       if (value === "None right now") planState.signs = planState.signs.includes(value) ? [] : [value];
       else { planState.signs = planState.signs.filter(sign => sign !== "None right now"); planState.signs = planState.signs.includes(value) ? planState.signs.filter(sign => sign !== value) : [...planState.signs, value]; }
     }
-    if (step === 1) planState.driver = value;
-    if (step === 2) planState.change = value;
+    if (step === 1) planState.drivers = planState.drivers.includes(value) ? planState.drivers.filter(driver => driver !== value) : [...planState.drivers, value];
+    if (step === 2) { planState.change = value; planState.actionId = ACTIONS.find(action => action.title === value)?.id || null; }
     if (step === 3) planState.person = value;
     renderPlanStep(); app.querySelector(`[data-value="${CSS.escape(value)}"]`)?.focus();
   }));
-  app.querySelector("#custom-change")?.addEventListener("input", event => { planState.change = event.target.value.trimStart(); app.querySelector("#change-count").textContent = event.target.value.length; app.querySelectorAll(".option").forEach(item => item.setAttribute("aria-checked", "false")); app.querySelector("#plan-next").disabled = !planStepValid(); });
+  app.querySelector("#custom-change")?.addEventListener("input", event => { planState.change = event.target.value.trimStart(); planState.actionId = null; app.querySelector("#change-count").textContent = event.target.value.length; app.querySelectorAll(".option").forEach(item => item.setAttribute("aria-checked", "false")); app.querySelector("#plan-next").disabled = !planStepValid(); });
   app.querySelector("#reminder-time")?.addEventListener("input", event => { planState.reminderTime = event.target.value; });
   app.querySelector("#person-name")?.addEventListener("input", event => { planState.personName = event.target.value; app.querySelector("#name-count").textContent = event.target.value.length; });
   app.querySelector("#review-date")?.addEventListener("input", event => { planState.reviewDate = event.target.value; app.querySelector("#plan-next").disabled = !planStepValid(); });
   app.querySelector("#review-time")?.addEventListener("input", event => { planState.reviewTime = event.target.value || "09:00"; });
-  app.querySelectorAll("[data-days]").forEach(button => button.addEventListener("click", () => { const date = new Date(); if (button.dataset.days === "month") date.setMonth(date.getMonth() + 1); else date.setDate(date.getDate() + Number(button.dataset.days)); planState.reviewDate = localDate(date); app.querySelector("#review-date").value = planState.reviewDate; app.querySelector("#plan-next").disabled = false; }));
+  app.querySelectorAll("[data-days]").forEach(button => button.addEventListener("click", () => { const date = new Date(); date.setDate(date.getDate() + Number(button.dataset.days)); planState.reviewDate = localDate(date); app.querySelector("#review-date").value = planState.reviewDate; app.querySelector("#plan-next").disabled = false; }));
   focusHeading();
 }
 
@@ -253,23 +264,26 @@ function planMessage(plan) {
 }
 
 function planLines(plan) {
+  const action = actionDetails(plan);
+  const drivers = driversForPlan(plan);
   const review = new Date(plan.reviewAt).toLocaleString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  return [["My early signs", plan.signs.join(", ")], ["My top driver", plan.driver], ["My change this week", `${plan.change}${plan.reminderTime ? `, reminder at ${plan.reminderTime} on weekdays` : ""}`], ["One person I'll tell", `${plan.person}${plan.personName ? ` (${plan.personName})` : ""}`], ["I'll review on", review]];
+  return [["My focus", focusForDriver(drivers)], ["My 7-day experiment", action.title], ["How I'll try it", action.instruction], ["Schedule", `${action.duration} minutes · ${action.frequency}${plan.reminderTime ? ` · reminder at ${plan.reminderTime}` : ""}`], ["I'll review on", review], ["My top drivers", drivers.join(", ")], ["One person I'll tell", `${plan.person}${plan.personName ? ` (${plan.personName})` : ""}`]];
 }
 
 async function finishPlan() {
-  const plan = { id: uid(), createdAt: new Date().toISOString(), signs: [...planState.signs], driver: planState.driver, change: planState.change.trim(), reminderTime: planState.reminderTime || null, person: planState.person, personName: planState.personName.trim() || null, reviewAt: parseLocal(planState.reviewDate, planState.reviewTime || "09:00").toISOString(), outcome: null };
+  const details = actionDetails(planState);
+  const plan = { id: uid(), createdAt: new Date().toISOString(), signs: [...planState.signs], drivers: [...planState.drivers], driver: planState.drivers[0], change: planState.change.trim(), actionId: details.id, actionInstruction: details.instruction, actionDuration: details.duration, actionFrequency: details.frequency, reminderTime: planState.reminderTime || null, person: planState.person, personName: planState.personName.trim() || null, reviewAt: parseLocal(planState.reviewDate, planState.reviewTime || "09:00").toISOString(), assessmentZone: planState.assessmentZone || null, assessmentFocus: planState.assessmentFocus || null, outcome: null };
   let stored = true;
   try { await savePlan(plan); } catch { stored = false; }
   renderPlanResult(plan, stored);
 }
 
-function calendarFile(plan) {
-  return new File([createIcs(plan, appUrl())], "burnies-plan.ics", { type: "text/calendar" });
+function calendarFile(plan, options = {}) {
+  return new File([createIcs(plan, appUrl(), options)], "burnies-plan.ics", { type: "text/calendar" });
 }
 
-function downloadCalendarFile(plan) {
-  const blob = calendarFile(plan);
+function downloadCalendarFile(plan, options) {
+  const blob = calendarFile(plan, options);
   const anchor = document.createElement("a");
   anchor.href = URL.createObjectURL(blob);
   anchor.download = "burnies-plan.ics";
@@ -277,8 +291,8 @@ function downloadCalendarFile(plan) {
   setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
 }
 
-async function openDeviceCalendar(plan) {
-  const file = calendarFile(plan);
+async function openDeviceCalendar(plan, options) {
+  const file = calendarFile(plan, options);
   try {
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       await navigator.share({ files: [file], title: "Burnies calendar reminders" });
@@ -287,7 +301,7 @@ async function openDeviceCalendar(plan) {
   } catch (error) {
     if (error?.name === "AbortError") return false;
   }
-  downloadCalendarFile(plan);
+  downloadCalendarFile(plan, options);
   showToast("Calendar file downloaded");
   return true;
 }
@@ -296,7 +310,7 @@ function openCalendarSheet(plan, links) {
   const returnFocus = document.activeElement;
   const sheet = document.createElement("div");
   sheet.className = "sheet-backdrop";
-  sheet.innerHTML = `<section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-sheet-title"><div class="sheet-handle" aria-hidden="true"></div><div class="sheet-header"><div><h2 id="calendar-sheet-title">Add to calendar</h2><p>Choose where to add your review or reminder.</p></div><button class="icon-button" id="calendar-sheet-close" type="button" aria-label="Close calendar options">×</button></div><div class="sheet-options"><button id="device-calendar" type="button"><strong>Device calendar</strong><span>Open a calendar app or download a calendar file</span></button><a href="${escapeHtml(links.google)}" rel="noopener"><strong>Google Calendar</strong><span>Review how it went</span></a>${links.reminder ? `<a href="${escapeHtml(links.reminder.url)}" rel="noopener"><strong>Google Calendar</strong><span>Weekday reminder</span></a>` : ""}<a href="${escapeHtml(links.outlook)}" rel="noopener"><strong>Outlook Calendar</strong><span>Review how it went</span></a></div><p class="note">Your device decides which installed apps can open these links. Calendar events contain only the neutral details described below.</p></section>`;
+  sheet.innerHTML = `<section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-sheet-title"><div class="sheet-handle" aria-hidden="true"></div><div class="sheet-header"><div><h2 id="calendar-sheet-title">Add to calendar</h2><p>Choose only what would be useful.</p></div><button class="icon-button" id="calendar-sheet-close" type="button" aria-label="Close calendar options">×</button></div><fieldset class="calendar-choices"><legend>Include</legend>${links.reminder ? '<label><input id="include-reminder" type="checkbox" checked><span><strong>Plan reminder</strong><small>Weekdays until your review date</small></span></label>' : ""}<label><input id="include-review" type="checkbox" checked><span><strong>Review check-in</strong><small>One event on your review date</small></span></label></fieldset><label class="field-label" for="alert-minutes">Alert for the device calendar file</label><select class="field" id="alert-minutes"><option value="">No alert</option><option value="0">At the scheduled time</option><option value="10" selected>10 minutes before</option><option value="30">30 minutes before</option></select><div class="sheet-options section-gap"><button id="device-calendar" type="button"><strong>Device calendar</strong><span>Open a calendar app or download a calendar file</span></button><a id="google-review" href="${escapeHtml(links.google)}" rel="noopener"><strong>Google Calendar</strong><span>Review how it went</span></a>${links.reminder ? `<a id="google-reminder" href="${escapeHtml(links.reminder.url)}" rel="noopener"><strong>Google Calendar</strong><span>Plan reminder until your review date</span></a>` : ""}<a id="outlook-review" href="${escapeHtml(links.outlook)}" rel="noopener"><strong>Outlook Calendar</strong><span>Review how it went</span></a></div><p class="note">Calendar import stays optional. Scores, signs, drivers and messages are never included. Your calendar will ask you to confirm the event.</p></section>`;
   document.body.append(sheet);
   document.body.style.overflow = "hidden";
   const close = () => {
@@ -307,11 +321,24 @@ function openCalendarSheet(plan, links) {
   sheet.querySelector("#calendar-sheet-close").addEventListener("click", close);
   sheet.addEventListener("click", event => { if (event.target === sheet) close(); });
   sheet.querySelectorAll("a").forEach(link => link.addEventListener("click", () => setTimeout(close, 0)));
-  sheet.querySelector("#device-calendar").addEventListener("click", async () => { if (await openDeviceCalendar(plan)) close(); });
+  const updateChoices = () => {
+    const includeReview = sheet.querySelector("#include-review").checked;
+    const includeReminder = sheet.querySelector("#include-reminder")?.checked ?? false;
+    sheet.querySelector("#google-review").hidden = !includeReview;
+    sheet.querySelector("#outlook-review").hidden = !includeReview;
+    if (sheet.querySelector("#google-reminder")) sheet.querySelector("#google-reminder").hidden = !includeReminder;
+    sheet.querySelector("#device-calendar").disabled = !includeReview && !includeReminder;
+  };
+  sheet.querySelectorAll('input[type="checkbox"]').forEach(input => input.addEventListener("change", updateChoices));
+  sheet.querySelector("#device-calendar").addEventListener("click", async () => {
+    const rawAlert = sheet.querySelector("#alert-minutes").value;
+    const options = { includeReview: sheet.querySelector("#include-review").checked, includeReminder: sheet.querySelector("#include-reminder")?.checked ?? false, alertMinutes: rawAlert === "" ? null : Number(rawAlert) };
+    if (await openDeviceCalendar(plan, options)) close();
+  });
   sheet.addEventListener("keydown", event => {
     if (event.key === "Escape") { close(); return; }
     if (event.key !== "Tab") return;
-    const focusable = [...sheet.querySelectorAll("a, button")];
+    const focusable = [...sheet.querySelectorAll("a:not([hidden]), button:not([disabled]), input, select")];
     const first = focusable[0], last = focusable.at(-1);
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
     if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
@@ -323,8 +350,11 @@ function renderPlanResult(plan, stored = true) {
   currentScreen = "plan-result";
   const lines = planLines(plan);
   const message = planMessage(plan);
+  const action = actionDetails(plan);
+  const drivers = driversForPlan(plan);
+  const review = lines[4][1];
   const links = calendarLinks(plan, appUrl());
-  app.innerHTML = `<section class="result"><div class="top"><span></span><span></span><button class="icon-button" id="plan-result-close" type="button" aria-label="Close plan">×</button></div><h1 data-focus-heading tabindex="-1">Your plan</h1><p class="lead">Do the two small things below now. Then copy the plan before you close this page.</p>${stored ? "" : '<p class="status">History is off, but you can still copy your plan.</p>'}<div class="hero red"><span class="eyebrow">Review how it went</span><div class="zone-title">${escapeHtml(lines[4][1])}</div><p>Look back on the week, then retake the check-in.</p></div>${lines.slice(0, 4).map(([label, value]) => `<div class="card"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div></div>`).join("")}<div class="card"><div class="label">Do now: message to ${escapeHtml(plan.person.toLowerCase())}</div><div class="value message">${escapeHtml(message)}</div><button class="copy-link" id="copy-message" type="button">${ICON_COPY} Copy message</button></div><div class="section-gap stack"><button class="cta" id="calendar-toggle" type="button">Add to calendar</button><button class="ghost" id="copy-plan" type="button">Copy my plan</button></div><p class="note">The review event is titled “Check in with myself” and holds only a link to the check-in. The weekday reminder carries only the change you chose. The rest of your plan is not added to any calendar.</p></section>`;
+  app.innerHTML = `<section class="result"><div class="top"><span></span><span></span><button class="icon-button" id="plan-result-close" type="button" aria-label="Close plan">×</button></div><h1 data-focus-heading tabindex="-1">Your plan</h1><p class="lead">One manageable experiment. You do not need to do it perfectly.</p>${stored ? "" : '<p class="status">History is off, but you can still copy your plan.</p>'}<div class="hero red"><span class="eyebrow">Your focus this week</span><div class="zone-title">${escapeHtml(focusForDriver(drivers))}</div><p>Try one small change, then notice what helped.</p></div><section class="card experiment-card"><div class="label">Your 7-day experiment</div><h2>${escapeHtml(action.title)}</h2><p>${escapeHtml(action.instruction)}</p><div class="experiment-meta"><span>${escapeHtml(`${action.duration} min`)}</span><span>${escapeHtml(action.frequency)}</span>${plan.reminderTime ? `<span>Reminder ${escapeHtml(plan.reminderTime)}</span>` : ""}</div></section><div class="card"><div class="label">What you noticed</div><div class="value">${escapeHtml(plan.signs.join(", "))}</div></div><div class="card"><div class="label">What may be driving it</div><div class="value">${escapeHtml(drivers.join(", "))}</div></div><div class="card"><div class="label">Do now: message to ${escapeHtml(plan.person.toLowerCase())}</div><div class="value message">${escapeHtml(message)}</div><button class="copy-link" id="copy-message" type="button">${ICON_COPY} Copy message</button></div><div class="card review-card"><div class="label">Review how it went</div><div class="value">${escapeHtml(review)}</div><p class="note">Look back without judging yourself, then retake the check-in.</p></div><div class="section-gap stack"><button class="cta" id="calendar-toggle" type="button">Add to calendar</button><button class="ghost" id="copy-plan" type="button">Copy my plan</button></div><p class="note">Calendar events include only the change you chose and a neutral review event. Your scores, signs, drivers and message stay in Burnies.</p></section>`;
   app.querySelector("#plan-result-close").addEventListener("click", renderHome);
   app.querySelector("#copy-message").addEventListener("click", () => copyText(message, "Message copied"));
   app.querySelector("#copy-plan").addEventListener("click", () => copyText(`My Burnies plan\n${lines.map(([label, value]) => `${label}: ${value}`).join("\n")}`, "Plan copied"));
@@ -337,9 +367,13 @@ async function renderHistory() {
   const available = await historyAvailable();
   const [checkins, plans] = await Promise.all([getCheckIns(), getPlans()]);
   const checkInMarkup = [...checkins].reverse().map(record => `<div class="card history-item"><div><strong>${record.total.toFixed(2)} · ${escapeHtml(ZONES[record.zone].label)}</strong><br><time datetime="${record.takenAt}">${new Date(record.takenAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</time></div><span class="badge ${record.zone}">${record.zone}</span></div>`).join("");
-  const planMarkup = [...plans].reverse().map(plan => `<div class="card history-item"><div><strong>${escapeHtml(plan.change)}</strong><br><time datetime="${plan.createdAt}">${new Date(plan.createdAt).toLocaleDateString("en-GB", { dateStyle: "medium" })}</time></div><span class="badge">${plan.outcome ? escapeHtml(plan.outcome === "stuck" ? "Yes" : plan.outcome === "not" ? "Not yet" : "Partly") : "Awaiting review"}</span></div>`).join("");
+  const planMarkup = [...plans].reverse().map(plan => `<button class="card history-item history-plan" type="button" data-plan-id="${escapeHtml(plan.id)}"><div><strong>${escapeHtml(plan.change)}</strong><br><time datetime="${plan.createdAt}">${new Date(plan.createdAt).toLocaleDateString("en-GB", { dateStyle: "medium" })}</time></div><span class="badge">${plan.outcome ? escapeHtml(plan.outcome === "stuck" ? "Yes" : plan.outcome === "not" ? "Not yet" : "Partly") : "View plan"}</span></button>`).join("");
   app.innerHTML = `${header("History")}<section class="page"><h1 data-focus-heading tabindex="-1">Your history</h1><p class="lead">Saved on this device only. Your scores are compared only with your own previous check-ins.</p>${available ? "" : '<p class="status">History is off on this device. Check-ins and plans still work, but completed entries cannot be saved.</p>'}<section class="history-group"><h2>Check-ins</h2>${checkins.length > 1 ? trendChart(checkins) : ""}${checkInMarkup || '<div class="history-empty">No completed check-ins yet.</div>'}</section><section class="history-group"><h2>Plans</h2>${planMarkup || '<div class="history-empty">No completed plans yet.</div>'}</section><button class="danger" id="clear-history" type="button" ${(checkins.length || plans.length) && available ? "" : "disabled"}>Clear my history</button></section>`;
   wireHeader();
+  app.querySelectorAll("[data-plan-id]").forEach(button => button.addEventListener("click", () => {
+    const plan = plans.find(item => item.id === button.dataset.planId);
+    if (plan) renderPlanResult(plan, true);
+  }));
   app.querySelector("#clear-history").addEventListener("click", () => showDialog({ title: "Clear all history?", text: "This removes every saved check-in and plan from this device. This cannot be undone.", confirmLabel: "Clear history", dangerous: true, onConfirm: async () => { try { await clearHistory(); showToast("History cleared"); renderHistory(); } catch { showToast("History could not be cleared"); } } }));
   focusHeading();
 }
@@ -371,5 +405,8 @@ registerServiceWorker();
 if (directStart() === "checkin") {
   storageSet("onboarding-complete", "1");
   renderCheckInIntro();
+} else if (directStart() === "plan") {
+  storageSet("onboarding-complete", "1");
+  renderPlanIntro();
 } else if (storageGet("onboarding-complete") === "1") renderHome();
 else renderFirstRun();

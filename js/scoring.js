@@ -1,4 +1,4 @@
-import { QUESTIONS, SUBSCALES } from "./data.js";
+import { QUESTIONS, SUBSCALES } from "./data.js?v=26";
 
 export const round2 = value => Math.round((value + Number.EPSILON) * 100) / 100;
 

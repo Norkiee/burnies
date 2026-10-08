@@ -126,12 +126,12 @@ Five steps, same visual flow as the check-in (back, counter n/5, close, progress
 | Step | Title | Input | Required |
 | --- | --- | --- | --- |
 | 1 | Which early signs do you notice? | Multi-select pills. Options: Loss of motivation, Negative thoughts, Trouble concentrating, Irritability, Sleep problems, Persistent exhaustion, None right now. "None right now" is exclusive and clears the others; picking another option clears it. | At least one |
-| 2 | What is your top driver? | Single-select. Options: Workload (Too much, too fast, or too many projects), Control (Little say over how or what I work on), Reward (Pay, credit or growth don't match the effort), Community (No one to think out loud with), Fairness (Unclear priorities, uneven credit), Values (Asked to ship what I don't believe in). | One |
+| 2 | What are your top drivers? | Multi-select with round checkmarks. Options: Workload (Too much, too fast, or too many projects), Control (Little say over how or what I work on), Reward (Pay, credit or growth don't match the effort), Community (No one to think out loud with), Fairness (Unclear priorities, uneven credit), Values (Asked to ship what I don't believe in). | At least one |
 | 3 | One change for this week | Single-select list plus an optional free-text "write your own" (max 90 characters). Typing text deselects the list choice, and choosing a list option clears the text. A weekday reminder time input, default 18:00, with the label "Weekday reminder time (clear it to skip)". | A change |
 | 4 | One person you will tell | Single-select: A friend, A family member, A teammate, My manager, A doctor or counselor. Optional first-name text field (max 40). | A person |
 | 5 | When will you review how it went? | Date input (min today, default 7 days ahead), time input (default 09:00), quick buttons: In 1 week, In 2 weeks, In 1 month. | A date |
 
-Change options for step 3: Shut down daily, Keep a wins log, Define done first, Protect two focus blocks a week, Cap side projects at one, Set a tripwire, Ask for workload to be visible, Agree after-hours norms. Optional improvement: order or highlight these by the driver chosen in step 2 (Workload suggests capping projects and making workload visible, Distance suggests the wins log).
+The step 3 screen is capped at six choices drawn from a larger action library. Rank the library using the selected early signs, selected drivers and, when available, the most relevant assessment pointer. Different answers should produce a different set of six options. Present the strongest three under “Suggested for you” and the next three under “Other ideas.” “Define done first” and “Protect two focus blocks a week” are excluded from the library.
 
 ### 5.1 Result screen
 
@@ -178,7 +178,7 @@ Floating local times, no time zone suffix. Review event: 15 minutes at the chose
 ```
 CheckIn  { id, takenAt (ISO), instrument: "bat12-work-2.0",
            answers: number[12], total, sub: { ex, md, ci, ei }, zone: "green|orange|red" }
-Plan     { id, createdAt (ISO), signs: string[], driver, change, reminderTime|null,
+Plan     { id, createdAt (ISO), signs: string[], drivers: string[], change, reminderTime|null,
            person, personName|null, reviewAt (ISO), outcome: null|"stuck"|"partly"|"not" }
 ```
 

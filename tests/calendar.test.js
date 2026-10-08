@@ -17,9 +17,17 @@ test("next weekday skips weekends", () => {
   assert.equal(next.getDay(), 1);
   assert.equal(next.getHours(), 18);
 });
-test("ics contains a neutral review and recurring reminder", () => {
-  const ics = createIcs(plan, "https://example.com/");
+test("ics contains selected events, a bounded reminder and alarms", () => {
+  const ics = createIcs(plan, "https://example.com/", { alertMinutes: 10 });
   assert.match(ics, /SUMMARY:Check in with myself/);
-  assert.match(ics, /RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR/);
+  assert.match(ics, /RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;UNTIL=/);
   assert.match(ics, /SUMMARY:Shut down daily/);
+  assert.match(ics, /TRIGGER:-PT10M/);
+  assert.match(ics, /DTSTART;TZID=/);
+});
+test("ics can export only the neutral review event", () => {
+  const ics = createIcs(plan, "https://example.com/", { includeReminder: false, alertMinutes: null });
+  assert.match(ics, /SUMMARY:Check in with myself/);
+  assert.doesNotMatch(ics, /SUMMARY:Shut down daily/);
+  assert.doesNotMatch(ics, /BEGIN:VALARM/);
 });

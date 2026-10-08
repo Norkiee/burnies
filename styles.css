@@ -84,6 +84,7 @@ p { margin: 0; }
 .option[aria-checked="true"] { outline: 2px solid var(--brand); }
 .option[aria-checked="true"] .dot { background: var(--brand); }
 .option[aria-checked="true"] .dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+.option[role="checkbox"][aria-checked="true"] .dot::after { content: "✓"; width: auto; height: auto; border-radius: 0; background: transparent; color: #fff; font-size: 19px; font-weight: 700; line-height: 1; }
 .field-label { display: block; color: var(--mute); font-size: 15px; margin: 18px 0 6px; font-weight: 500; }
 .field { width: 100%; min-height: 52px; border: 2px solid var(--pill2); border-radius: 18px; background: var(--field); color: var(--ink); padding: 13px 14px; font-size: 17px; }
 textarea.field { min-height: 144px; resize: vertical; }
@@ -111,6 +112,11 @@ textarea.field { min-height: 144px; resize: vertical; }
 .install-card { border: 2px solid var(--pill2); border-radius: 22px; padding: 18px; margin-top: 18px; }
 .install-card p { color: var(--mute); margin: 6px 0 14px; }
 .install-card .icon-button { float: right; margin: -8px -8px 0 8px; }
+.due-card { border: 2px solid var(--brand); border-radius: 24px; padding: 19px; margin: 0 0 18px; }
+.due-card .label { color: var(--brand); font-size: 13px; font-weight: 700; }
+.due-card strong { display: block; font-size: 20px; margin-top: 3px; }
+.due-card p { color: var(--mute); font-weight: 500; margin: 6px 0 14px; }
+.due-card .ghost { min-height: 48px; }
 
 .page, .result { width: 100%; max-width: 520px; margin-inline: auto; }
 .result h1, .page h1 { font-size: 36px; margin: 12px 0 6px; }
@@ -149,6 +155,17 @@ textarea.field { min-height: 144px; resize: vertical; }
 .outcome-options button { min-height: 44px; border: 0; border-radius: 999px; background: var(--pill2); color: var(--ink); }
 .message { white-space: pre-wrap; }
 .copy-link { min-height: 44px; border: 0; background: none; padding: 8px 0; color: var(--brand); text-decoration: underline; text-underline-offset: 4px; }
+.action-preview { border: 2px solid var(--pill2); border-radius: 20px; padding: 15px 17px; margin-top: 12px; }
+.action-groups h3 { color: var(--mute); font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+.action-groups .stack + h3 { margin-top: 20px; }
+.action-preview span { color: var(--brand); font-size: 13px; font-weight: 700; }
+.action-preview p { margin-top: 5px; font-weight: 500; }
+.action-preview small { display: block; color: var(--mute); margin-top: 7px; font-weight: 500; }
+.experiment-card h2 { font-size: 24px; margin: 4px 0 8px; }
+.experiment-card > p { color: var(--mute); font-weight: 500; }
+.experiment-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.experiment-meta span { border-radius: 999px; background: var(--pill2); padding: 6px 10px; font-size: 12px; }
+.review-card .note { margin-top: 7px; }
 .sheet-backdrop { position: fixed; inset: 0; z-index: 40; display: grid; align-items: end; justify-items: center; background: rgba(23, 22, 26, .62); }
 .bottom-sheet { width: min(100%, 520px); max-height: min(88svh, 680px); overflow-y: auto; border-radius: 30px 30px 0 0; padding: 10px 22px calc(24px + env(safe-area-inset-bottom, 0px)); background: var(--bg); color: var(--ink); box-shadow: 0 -16px 48px rgba(0,0,0,.24); }
 .sheet-handle { width: 48px; height: 5px; border-radius: 999px; background: var(--pill2); margin: 2px auto 15px; }
@@ -161,11 +178,19 @@ textarea.field { min-height: 144px; resize: vertical; }
 .sheet-options strong { font-size: 17px; }
 .sheet-options strong, .sheet-options span { width: 100%; }
 .sheet-options span { color: var(--mute); font-size: 14px; margin-top: 2px; font-weight: 500; }
+.sheet-options button:disabled { opacity: .4; }
+.calendar-choices { border: 0; padding: 0; margin: 0; }
+.calendar-choices legend { color: var(--mute); font-size: 14px; font-weight: 500; margin-bottom: 7px; }
+.calendar-choices label { display: flex; align-items: center; gap: 12px; border-radius: 18px; background: var(--pill); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+.calendar-choices input { width: 22px; height: 22px; accent-color: var(--brand); flex: none; }
+.calendar-choices span { display: flex; flex-direction: column; min-width: 0; }
+.calendar-choices small { color: var(--mute); font-weight: 500; margin-top: 2px; }
 
 .history-group { margin: 24px 0; }
 .history-group h2 { font-size: 24px; margin-bottom: 12px; }
 .history-item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
 .history-item time { color: var(--mute); font-size: 13px; font-weight: 500; }
+.history-plan { width: 100%; border: 0; color: var(--ink); text-align: left; font: inherit; }
 .history-empty { text-align: center; padding: 42px 18px; background: var(--card); border-radius: 24px; color: var(--mute); font-weight: 500; }
 .status { border-radius: 16px; background: var(--pill); padding: 12px 14px; color: var(--mute); font-size: 14px; font-weight: 500; margin-bottom: 14px; }
 
