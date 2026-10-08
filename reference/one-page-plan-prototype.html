@@ -1,0 +1,305 @@
+<title>One-Page Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Same flow and look as the BAT-12 survey: red intro, one step per screen, pill answers, results card. */
+:root {
+  --bg: #fffdfb; --ink: #3b3a3d; --mute: #6b696f; --pill: #fbf1f0; --pill2: #efdedc;
+  --brand: #a33630; --brand2: #7d2621; --on-brand: #ffffff; --pink: #dc8885; --red: #d3463f;
+  --card: #fbf1f0; --field: #ffffff;
+  --font: "Instrument Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17161a; --ink: #f4f1ee; --mute: #a8a5ab; --pill: #242227; --pill2: #3a373d; --card: #242227; --field: #1d1b20;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17161a; --ink: #f4f1ee; --mute: #a8a5ab; --pill: #242227; --pill2: #3a373d; --card: #242227; --field: #1d1b20;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-weight: 600; line-height: 1.4; }
+#app { max-width: 520px; margin: 0 auto; padding: 20px 22px 32px; display: flex; flex-direction: column; min-height: 100vh; }
+h1, h2 { margin: 0; line-height: 1.15; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
+.cta {
+  display: block; width: 100%; text-align: center; text-decoration: none; border: 0; border-radius: 999px;
+  background: var(--brand); color: var(--on-brand); padding: 18px; font-size: 20px; font-weight: 700;
+  box-shadow: 0 4px 0 var(--brand2);
+}
+.cta:disabled { opacity: .35; box-shadow: none; cursor: default; }
+.ghost {
+  display: block; width: 100%; text-align: center; text-decoration: none; background: none; color: var(--ink);
+  border: 2px solid var(--pill2); border-radius: 999px; padding: 15px; font-size: 18px; font-weight: 700;
+}
+.stack { display: flex; flex-direction: column; gap: 10px; }
+/* intro */
+.intro {
+  background: var(--brand); color: #fff; margin: -20px -22px -32px; padding: 56px 24px 32px;
+  flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; position: relative; overflow: hidden;
+}
+.intro h1 { font-size: 44px; font-weight: 700; letter-spacing: -.02em; margin-top: 64px; }
+.intro p { font-size: 19px; margin: 16px 0 0; }
+.intro .cta { background: #fff; color: var(--brand2); box-shadow: none; }
+.small { font-size: 14px; opacity: .85; line-height: 1.4; }
+.deco i { position: absolute; display: block; width: 40px; height: 40px; }
+/* steps */
+.top { display: flex; align-items: center; justify-content: space-between; height: 48px; font-size: 18px; font-variant-numeric: tabular-nums; }
+.top button { background: none; border: 0; color: var(--ink); font-size: 28px; width: 44px; height: 44px; line-height: 1; }
+.bar { height: 6px; border-radius: 9px; background: var(--pill2); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--brand); }
+.q { flex: 1; display: flex; flex-direction: column; }
+.q h2 { font-size: 28px; font-weight: 700; margin: 32px 0 8px; text-wrap: balance; }
+.q .ctx { color: var(--mute); font-size: 16px; margin: 0 0 22px; }
+.opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left;
+  background: var(--pill); color: var(--ink); border: 0; border-radius: 999px; padding: 15px 22px; font-size: 18px; font-weight: 600;
+}
+.opt .d { width: 28px; height: 28px; border-radius: 50%; background: var(--pill2); flex: none; display: grid; place-items: center; }
+.opt[aria-checked="true"] { outline: 2px solid var(--brand); }
+.opt[aria-checked="true"] .d { background: var(--brand); }
+.opt[aria-checked="true"] .d::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+.opt[aria-disabled="true"] { opacity: .45; cursor: default; }
+.field-label { font-size: 15px; color: var(--mute); margin: 18px 0 6px; display: block; }
+.field {
+  width: 100%; background: var(--field); color: var(--ink); border: 2px solid var(--pill2); border-radius: 18px;
+  padding: 14px 12px; font-size: 17px; font-weight: 600; min-height: 52px;
+}
+.field::placeholder { color: var(--mute); font-weight: 500; }
+.row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip { background: var(--pill); color: var(--ink); border: 0; border-radius: 999px; padding: 10px 16px; font-size: 15px; font-weight: 700; min-height: 44px; }
+.q .foot { margin-top: auto; padding-top: 24px; }
+.count { color: var(--mute); font-size: 14px; margin-top: 4px; }
+/* result */
+.res h1 { font-size: 34px; font-weight: 700; margin: 12px 0 6px; }
+.lead { color: var(--mute); margin: 0 0 18px; }
+.hero { background: var(--brand); color: #fff; border-radius: 28px; padding: 24px; margin-bottom: 14px; }
+.hero b { font-size: 15px; display: block; opacity: .9; }
+.hero .when { font-size: 28px; font-weight: 700; line-height: 1.2; margin-top: 4px; }
+.hero p { margin: 8px 0 0; font-size: 15px; opacity: .92; }
+.sc { background: var(--card); border-radius: 22px; padding: 16px 20px; margin-bottom: 10px; }
+.sc .n { font-size: 14px; color: var(--mute); display: flex; align-items: center; gap: 6px; }
+.sc .v { font-size: 18px; margin-top: 2px; overflow-wrap: anywhere; }
+.linkbtn { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; background: none; border: 0; padding: 8px 0; min-height: 44px; color: var(--brand); font-size: 16px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.linkbtn svg { flex: none; }
+:root[data-theme="dark"] .linkbtn { color: var(--pink); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .linkbtn { color: var(--pink); } }
+.menu { display: flex; flex-direction: column; gap: 8px; }
+.menu a { display: block; text-decoration: none; text-align: center; background: var(--pill); color: var(--ink); border-radius: 999px; padding: 14px 18px; font-size: 16px; font-weight: 700; }
+.cal { margin-top: 8px; display: flex; flex-direction: column; gap: 10px; }
+.note { font-size: 14px; color: var(--mute); line-height: 1.5; margin: 16px 0; }
+@media (prefers-reduced-motion: no-preference) { .bar i { transition: width .3s; } }
+</style>
+
+<div id="app"></div>
+
+<script>
+(function () {
+  var CHECKIN_URL = "https://claude.ai/artifact/9qbhXtm9BzHzAKvBFMQD1E";
+  var SIGNS = ["Loss of motivation", "Negative thoughts", "Trouble concentrating", "Irritability", "Sleep problems", "Persistent exhaustion", "None right now"];
+  var DRIVERS = [
+    ["Workload", "Too much, too fast, or too many projects"],
+    ["Control", "Little say over how or what I work on"],
+    ["Reward", "Pay, credit or growth don't match the effort"],
+    ["Community", "No one to think out loud with"],
+    ["Fairness", "Unclear priorities, uneven credit"],
+    ["Values", "Asked to ship what I don't believe in"]
+  ];
+  var CHANGES = [
+    "Shut down daily", "Keep a wins log", "Define done first", "Protect two focus blocks a week",
+    "Cap side projects at one", "Set a tripwire", "Ask for workload to be visible", "Agree after-hours norms"
+  ];
+  var PEOPLE = ["A friend", "A family member", "A teammate", "My manager", "A doctor or counselor"];
+
+  var S, step;
+  var app = document.getElementById("app");
+
+  function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function fresh() {
+    var d = new Date(); d.setDate(d.getDate() + 7);
+    return { signs: [], driver: "", change: "", person: "", name: "", date: iso(d), time: "09:00", rtime: "18:00" };
+  }
+  function toggle(arr, v) { var i = arr.indexOf(v); if (i < 0) arr.push(v); else arr.splice(i, 1); }
+
+  var DECO = '<div class="deco" aria-hidden="true"><i style="right:80px;top:0;background:var(--red)"></i><i style="right:40px;top:0;background:var(--pink)"></i><i style="right:40px;top:40px;background:var(--pink)"></i><i style="right:0;top:40px;background:var(--red)"></i><i style="right:0;top:80px;background:var(--pink)"></i><i style="right:40px;top:80px;background:var(--red)"></i></div>';
+
+  var STEPS = [
+    { h: "Which early signs do you notice?", ctx: "Pick any that are true for you right now.", ok: function () { return S.signs.length > 0; } },
+    { h: "What is your top driver?", ctx: "Where does work mismatch you most? Pick one.", ok: function () { return !!S.driver; } },
+    { h: "One change for this week", ctx: "Pick one. Small is fine.", ok: function () { return !!S.change; } },
+    { h: "One person you will tell", ctx: "Saying it out loud to someone is the step people skip most.", ok: function () { return !!S.person; } },
+    { h: "When will you review how it went?", ctx: "Look back on how the week went, and retake the check-in.", ok: function () { return !!S.date; } }
+  ];
+
+  function intro() {
+    step = -1; S = fresh();
+    app.innerHTML = '<section class="intro">' + DECO +
+      '<div><h1>Your one-page plan</h1><p>Five quick steps, about three minutes. You finish with one small change, a message ready to send, and a reminder to review how it went.</p></div>' +
+      '<div><p class="small">Private. What you pick stays on this device and is never sent or saved. Not medical advice.</p><div style="height:14px"></div><button class="cta" id="go">Start</button></div></section>';
+    document.getElementById("go").onclick = function () { step = 0; render(); };
+    window.scrollTo(0, 0);
+  }
+
+  function optHtml(label, checked, role, data, disabled) {
+    return '<button type="button" class="opt" role="' + role + '" aria-checked="' + checked + '"' + (disabled ? ' aria-disabled="true"' : '') + ' data-v="' + esc(data) + '"><span>' + esc(label) + '</span><span class="d"></span></button>';
+  }
+
+  function render(focusSel) {
+    var n = STEPS.length, st = STEPS[step], body = "";
+    if (step === 0) {
+      body = '<div class="stack" role="group" aria-label="Early signs">' + SIGNS.map(function (s) { return optHtml(s, S.signs.indexOf(s) >= 0, "checkbox", s); }).join("") + "</div>";
+    } else if (step === 1) {
+      body = '<div class="stack" role="radiogroup" aria-label="Top driver">' + DRIVERS.map(function (d) {
+        return optHtml(d[0] + ": " + d[1], S.driver === d[0], "radio", d[0]);
+      }).join("") + "</div>";
+    } else if (step === 2) {
+      body = '<div class="stack" role="radiogroup" aria-label="Change this week">' + CHANGES.map(function (c) {
+        return optHtml(c, S.change === c, "radio", c);
+      }).join("") + '</div><label class="field-label" for="custom">Or write your own</label>' +
+        '<input class="field" id="custom" type="text" maxlength="90" placeholder="For example: no Slack after 7pm" value="' + esc(CHANGES.indexOf(S.change) < 0 ? S.change : "") + '">' +
+        '<label class="field-label" for="rt">Weekday reminder time (clear it to skip)</label>' +
+        '<input class="field" id="rt" type="time" value="' + esc(S.rtime) + '">';
+    } else if (step === 3) {
+      body = '<div class="stack" role="radiogroup" aria-label="Person to tell">' + PEOPLE.map(function (p) { return optHtml(p, S.person === p, "radio", p); }).join("") + '</div>' +
+        '<label class="field-label" for="pname">Name, if you want to note it (optional)</label>' +
+        '<input class="field" id="pname" type="text" maxlength="40" placeholder="First name" value="' + esc(S.name) + '">';
+    } else {
+      body = '<div class="chips" role="group" aria-label="Quick dates"><button type="button" class="chip" data-w="7">In 1 week</button><button type="button" class="chip" data-w="14">In 2 weeks</button><button type="button" class="chip" data-w="30">In 1 month</button></div>' +
+        '<div class="row2"><div><label class="field-label" for="d">Date</label><input class="field" id="d" type="date" min="' + iso(new Date()) + '" value="' + esc(S.date) + '"></div>' +
+        '<div><label class="field-label" for="t">Time</label><input class="field" id="t" type="time" value="' + esc(S.time) + '"></div></div>';
+    }
+    app.innerHTML = '<div class="q"><div class="top"><button type="button" id="bk" aria-label="Previous step">‹</button><span>' + (step + 1) + '/' + n + '</span><button type="button" id="x" aria-label="Start over">×</button></div>' +
+      '<div class="bar"><i style="width:' + (step / n * 100) + '%"></i></div>' +
+      '<h2 id="h" tabindex="-1">' + esc(st.h) + '</h2><p class="ctx">' + esc(st.ctx) + '</p>' + body +
+      '<div class="foot"><button type="button" class="cta" id="nx"' + (st.ok() ? "" : " disabled") + '>' + (step === n - 1 ? "Show my plan" : "Next") + '</button></div></div>';
+    wire();
+    if (focusSel) { var el = app.querySelector(focusSel); if (el) el.focus({ preventScroll: true }); }
+  }
+
+  function refreshNext() { document.getElementById("nx").disabled = !STEPS[step].ok(); }
+  function wire() {
+    document.getElementById("bk").onclick = function () { if (step > 0) { step--; render(); } else intro(); };
+    document.getElementById("x").onclick = intro;
+    document.getElementById("nx").onclick = function () { if (!STEPS[step].ok()) return; if (step === STEPS.length - 1) result(); else { step++; render(); window.scrollTo(0, 0); } };
+    Array.prototype.forEach.call(app.querySelectorAll(".opt"), function (b) {
+      b.onclick = function () {
+        if (b.getAttribute("aria-disabled") === "true") return;
+        var v = b.getAttribute("data-v");
+        if (step === 0) {
+          if (v === "None right now") S.signs = S.signs.indexOf(v) >= 0 ? [] : [v];
+          else { S.signs = S.signs.filter(function (x) { return x !== "None right now"; }); toggle(S.signs, v); }
+        } else if (step === 1) S.driver = v;
+        else if (step === 2) S.change = v;
+        else if (step === 3) S.person = v;
+        render('.opt[data-v="' + v.replace(/"/g, '\\"') + '"]');
+      };
+    });
+    var c = document.getElementById("custom");
+    if (c) c.oninput = function () {
+      S.change = c.value.trim();
+      Array.prototype.forEach.call(app.querySelectorAll(".opt"), function (b) { b.setAttribute("aria-checked", b.getAttribute("data-v") === S.change ? "true" : "false"); });
+      refreshNext();
+    };
+    var rt = document.getElementById("rt");
+    if (rt) rt.oninput = function () { S.rtime = rt.value; };
+    var pn = document.getElementById("pname");
+    if (pn) pn.oninput = function () { S.name = pn.value; };
+    var d = document.getElementById("d"), t = document.getElementById("t");
+    if (d) d.oninput = function () { S.date = d.value; refreshNext(); };
+    if (t) t.oninput = function () { S.time = t.value || "09:00"; };
+    Array.prototype.forEach.call(app.querySelectorAll(".chip"), function (b) {
+      b.onclick = function () { var x = new Date(); x.setDate(x.getDate() + (+b.getAttribute("data-w"))); S.date = iso(x); d.value = S.date; refreshNext(); };
+    });
+  }
+
+  function whenText() {
+    var p = S.date.split("-"), tm = (S.time || "09:00").split(":");
+    var dt = new Date(+p[0], +p[1] - 1, +p[2], +tm[0], +tm[1]);
+    return { dt: dt, text: dt.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + ", " + pad(dt.getHours()) + ":" + pad(dt.getMinutes()) };
+  }
+
+  function planLines() {
+    var who = S.person + (S.name.trim() ? " (" + S.name.trim() + ")" : "");
+    return [
+      ["My early signs", S.signs.join(", ")],
+      ["My top driver", S.driver],
+      ["My change this week", S.change + (S.rtime ? ", reminder at " + S.rtime + " on weekdays" : "")],
+      ["One person I'll tell", who],
+      ["I'll review on", whenText().text]
+    ];
+  }
+
+  function messageText() {
+    var real = S.signs.filter(function (x) { return x !== "None right now"; }).map(function (x) { return x.toLowerCase(); });
+    var noticed = real.length ? "I've noticed " + real.join(", ") + " lately" : "I've been thinking about how I'm coping with work lately";
+    var hi = "Hi" + (S.name.trim() ? " " + S.name.trim() : "") + ", ";
+    if (S.person === "A doctor or counselor") return hi + noticed + " and I think work may be part of it. I'd like to book a time to talk about it.";
+    if (S.person === "My manager") return hi + noticed + ", and I'd like to talk through my workload and priorities. Do you have 15 minutes this week?";
+    return hi + noticed + " and I'd like to talk it through. Do you have 15 minutes this week?";
+  }
+
+  function calLinks() {
+    var w = whenText(), s = w.dt, e = new Date(s.getTime() + 15 * 60000);
+    function g(d) { return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "T" + pad(d.getHours()) + pad(d.getMinutes()) + "00"; }
+    function o(d) { return iso(d) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":00"; }
+    // The review event is neutral: it carries no part of the plan.
+    var title = "Check in with myself", details = "Look back on how the week went, then retake the check-in: " + CHECKIN_URL;
+    var out = {
+      google: "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(title) + "&dates=" + g(s) + "/" + g(e) + "&details=" + encodeURIComponent(details),
+      outlook: "https://outlook.live.com/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&rru=addevent&subject=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(details) + "&startdt=" + o(s) + "&enddt=" + o(e),
+      habit: ""
+    };
+    if (S.rtime) {
+      var h = S.rtime.split(":"), d = new Date(); d.setDate(d.getDate() + 1);
+      while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+      var hs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +h[0], +h[1]), he = new Date(hs.getTime() + 10 * 60000);
+      out.habit = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(S.change) + "&dates=" + g(hs) + "/" + g(he) + "&recur=" + encodeURIComponent("RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
+    }
+    return out;
+  }
+
+  function copyBtn(id, label, text) {
+    document.getElementById(id).onclick = function () {
+      var btn = this, lb = btn.querySelector(".lbl") || btn;
+      function done(ok) { lb.textContent = ok ? "Copied" : "Select the text on this page and copy it"; setTimeout(function () { lb.textContent = label; }, 2200); }
+      try { navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
+    };
+  }
+
+  function result() {
+    var lines = planLines(), links = calLinks(), msg = messageText();
+    var ICON_COPY = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+    var ICON_MSG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
+    app.innerHTML = '<div class="res"><div class="top"><span></span><button type="button" id="x2" aria-label="Close and start over">\u00d7</button></div><h1 id="rt2" tabindex="-1">Your plan</h1><p class="lead">Do the two small things below now. Then copy the plan before you close this page.</p>' +
+      '<div class="hero"><b>Review how it went</b><div class="when">' + esc(whenText().text) + '</div><p>Look back on the week, then retake the check-in.</p></div>' +
+      lines.slice(0, 4).map(function (l) { return '<div class="sc"><div class="n">' + esc(l[0]) + '</div><div class="v">' + esc(l[1]) + '</div></div>'; }).join("") +
+      '<div class="sc"><div class="n">' + ICON_MSG + ' Do now: message to ' + esc(S.person.toLowerCase()) + '</div><div class="v">' + esc(msg) + '</div>' +
+      '<button type="button" class="linkbtn" id="cmsg">' + ICON_COPY + '<span class="lbl">Copy message</span></button></div>' +
+      '<div class="cal"><button type="button" class="cta" id="addcal" aria-expanded="false" aria-controls="calmenu">Add to calendar</button>' +
+      '<div class="menu" id="calmenu" hidden><a id="gcal" href="' + links.google + '" target="_blank" rel="noopener">Google Calendar: review</a>' +
+      (links.habit ? '<a id="hcal" href="' + links.habit + '" target="_blank" rel="noopener">Google Calendar: weekday reminder</a>' : "") +
+      '<a id="ocal" href="' + links.outlook + '" target="_blank" rel="noopener">Outlook calendar: review</a></div>' +
+      '<button type="button" class="ghost" id="copy">Copy my plan</button></div>' +
+      '<p class="note">The review event is titled "Check in with myself" and holds only a link to the check-in. The weekday reminder carries only the change you chose. The rest of your plan is not added to any calendar. Using Apple Calendar or another app? Copy your plan and set the reminders yourself.</p></div>';
+    document.getElementById("x2").onclick = intro;
+    document.getElementById("addcal").onclick = function () {
+      var m = document.getElementById("calmenu"), open = m.hidden;
+      m.hidden = !open; this.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+    copyBtn("cmsg", "Copy message", msg);
+    copyBtn("copy", "Copy my plan", "My one-page plan\n" + lines.map(function (l) { return l[0] + ": " + l[1]; }).join("\n"));
+    window.scrollTo(0, 0);
+    document.getElementById("rt2").focus({ preventScroll: true });
+  }
+
+  intro();
+})();
+</script>

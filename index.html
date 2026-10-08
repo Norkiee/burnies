@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Burnies is a private, on-device work experience check-in and one-page plan.">
+  <meta name="theme-color" content="#fffdfb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17161a" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Burnies">
+  <title>Burnies</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+  <link rel="icon" href="./assets/icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main id="app" aria-live="polite"></main>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <div id="update-banner" class="update-banner" hidden>
+    <span>Update available</span>
+    <button type="button" id="apply-update">Reload</button>
+  </div>
+  <noscript>This app needs JavaScript to run. No information is sent to a server.</noscript>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

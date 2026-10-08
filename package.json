@@ -1,0 +1,10 @@
+{
+  "name": "burnies",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test",
+    "serve": "python3 -m http.server 4173 -d dist"
+  }
+}

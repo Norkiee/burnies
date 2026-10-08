@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Work experience survey</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fffdfb;--ink:#3b3a3d;--mute:#77757a;--pill:#fbf1f0;--pill2:#efdedc;--brand:#a33630;--brand2:#7d2621;--red:#d3463f;--pink:#dc8885;--g:#2e8b57;--o:#c26f0c;--r:#a33630;--card:#fbf1f0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17161a;--ink:#f4f1ee;--mute:#a8a5ab;--pill:#242227;--pill2:#3a373d;--card:#242227}}
+:root[data-theme="dark"]{--bg:#17161a;--ink:#f4f1ee;--mute:#a8a5ab;--pill:#242227;--pill2:#3a373d;--card:#242227}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Instrument Sans","Avenir Next","Segoe UI",system-ui,sans-serif;font-weight:700}
+#app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:20px 22px 28px}
+h1,h2{margin:0;line-height:1.15}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--brand);outline-offset:3px}
+.cta{background:var(--brand);color:#fff;border:0;border-radius:999px;padding:20px;font-size:20px;font-weight:800;width:100%;box-shadow:0 4px 0 var(--brand2),0 8px 18px rgba(163,54,48,.3)}
+.cta:disabled{opacity:.35;box-shadow:none;cursor:default}
+/* intro */
+.intro{position:relative;overflow:hidden;background:var(--brand);color:#fff;margin:-20px -22px -28px;padding:60px 28px 32px;flex:1;display:flex;flex-direction:column;justify-content:space-between;min-height:100vh;max-width:none}
+.intro h1{font-size:46px;font-weight:700;margin-top:90px;letter-spacing:-.02em}.intro>div{position:relative}
+.intro p{font-size:19px;line-height:1.45;margin:18px 0;font-weight:700}
+.intro .cta{background:#fff;box-shadow:none;color:var(--brand2)}
+.small{font-size:14px;color:inherit;opacity:.8;font-weight:700;line-height:1.4}
+/* question */
+.top{display:flex;align-items:center;justify-content:space-between;height:48px;font-size:20px}
+.top button{background:none;border:0;color:var(--ink);font-size:28px;width:44px;height:44px;line-height:1}
+.bar{height:6px;border-radius:9px;background:var(--pill2);margin:6px 0 0;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--brand);transition:width .3s}
+.q{flex:1;display:flex;flex-direction:column}
+.q h2{font-size:28px;text-align:center;margin:8vh 0 34px;font-weight:700;line-height:1.3}
+.q .ctx{display:block;font-size:16px;color:var(--mute);margin-bottom:10px;font-weight:700}
+.opt{display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--pill);border:0;border-radius:999px;padding:20px 26px;margin-bottom:12px;font-size:20px;color:var(--ink);text-align:left}
+.opt span.d{width:36px;height:36px;border-radius:50%;background:var(--pill2);flex:none;display:grid;place-items:center}
+.opt[aria-checked=true] span.d{background:var(--brand)}
+.opt[aria-checked=true] span.d::after{content:"";width:12px;height:12px;border-radius:50%;background:#fff}
+.q .foot{margin-top:auto;padding-top:24px}
+/* loading */
+.load{background:var(--brand);color:#fff;margin:-20px -22px -28px;padding:0 34px;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden;max-width:none;flex:1}
+.load h2{font-size:34px;font-weight:700;line-height:1.3}
+.deco i{position:absolute;display:block;width:44px;height:44px}.deco .big{width:38%;height:26%;left:0;bottom:0}.load h2{position:relative}
+/* results */
+.res h1{font-size:34px;margin:18px 0 6px;font-weight:800}
+.res .lead{color:var(--mute);line-height:1.45;margin:0 0 20px}
+.hero{border-radius:28px;padding:26px;color:#fff;margin-bottom:18px}
+.hero b{font-size:15px;display:block;opacity:.9}.hero{color:#fff}
+.hero .s{font-size:56px;font-weight:800;line-height:1.1}
+.hero .z{font-size:22px;font-weight:700;margin-bottom:6px}
+.hero p{margin:6px 0 0;line-height:1.45;font-weight:700}
+.sc{background:var(--card);border-radius:24px;padding:18px 20px;margin-bottom:12px}
+.sc .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sc .n{font-size:18px}.sc .v{font-size:16px;color:var(--mute)}
+.sc .v em{font-style:normal;font-weight:800}
+.track{position:relative;height:12px;border-radius:9px;margin:14px 0 4px;overflow:hidden;display:flex}
+.track i{display:block;height:100%}
+.pin{position:relative;height:0}
+.pin u{position:absolute;top:-22px;width:6px;height:20px;border-radius:3px;background:var(--ink);transform:translateX(-50%)}
+.note{font-size:14px;line-height:1.5;color:var(--mute);margin:20px 0}
+.ghost{background:none;border:2px solid var(--pill2);color:var(--ink);border-radius:999px;padding:16px;width:100%;font-size:18px;font-weight:800;margin-top:6px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const Q=[
+["E","At work, I feel mentally exhausted"],["E","After a day at work, I find it hard to recover my energy"],["E","At work, I feel physically exhausted"],
+["M","I struggle to find any enthusiasm for my work"],["M","I feel a strong aversion towards my job"],["M","I'm cynical about what my work means to others"],
+["C","At work, I have trouble staying focused"],["C","When I'm working, I have trouble concentrating"],["C","I make mistakes in my work because I have my mind on other things"],
+["N","At work, I feel unable to control my emotions"],["N","I do not recognize myself in the way I react emotionally at work"],["N","At work I may overreact unintentionally"]];
+const OPTS=["Never","Rarely","Sometimes","Often","Always"];
+// Clinical cut-offs, Flemish employees, BAT-12 total score (Manual v2.0, Table 6): [green max, orange max]
+const SC=[["T","Overall score",[2.53,2.95]]];
+const ZN=["Green","Orange","Red"],ZC=["var(--g)","var(--o)","var(--r)"];
+const ZT=["Not at risk of burnout","At risk of burnout","Very high risk of burnout"];
+const ZD=[
+"Your answers sit below the level seen in people assessed with severe burnout complaints. Keep protecting the habits that help you recover.",
+"Your answers are close to those of people with burnout complaints. This is a good moment to look at workload, rest and support before it grows.",
+"Your answers match those of people assessed with severe burnout complaints. Please talk to your doctor, a mental health professional or an occupational health service."];
+const DECO='<div class="deco" aria-hidden="true"><i style="right:88px;top:0;background:var(--red)"></i><i style="right:44px;top:0;background:var(--pink)"></i><i style="right:44px;top:44px;background:var(--pink)"></i><i style="right:0;top:44px;background:var(--red)"></i><i style="right:0;top:88px;background:var(--pink)"></i><i style="right:44px;top:88px;background:var(--red)"></i></div>';
+let A=Array(Q.length).fill(null),i=-1;
+const app=document.getElementById("app");
+const $=(h)=>app.innerHTML=h;
+function intro(){i=-1;A.fill(null);$(`<section class="intro">${DECO}<div><h1>Work experience survey</h1><p>${Q.length} short statements about how you feel at work. It takes about 2 minutes.</p><p>Answer how often each one applies to you. Go with your first instinct.</p></div><div><p class="small">Anonymous. Your answers stay on this device and are never sent or saved. This is a screening tool, not a diagnosis.</p><button class="cta" id="go">Start</button></div></section>`);
+document.getElementById("go").onclick=()=>{i=0;ask()}}
+function ask(){const n=Q.length;
+$(`<div class="q"><div class="top"><button id="bk" aria-label="Previous question">‹</button><span>${i+1}/${n}</span><button id="x" aria-label="Quit survey">×</button></div><div class="bar"><i style="width:${(i/n)*100}%"></i></div>
+<h2><span class="ctx">Thinking about your work, how often does this apply to you?</span>${Q[i][1]}</h2>
+<div role="radiogroup" aria-label="Answer">${OPTS.map((o,k)=>`<button class="opt" role="radio" aria-checked="${A[i]===k+1}" data-v="${k+1}">${o}<span class="d"></span></button>`).join("")}</div>
+<div class="foot"><button class="cta" id="nx" ${A[i]?"":"disabled"}>${i===n-1?"See my results":"Next"}</button></div></div>`);
+document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{A[i]=+b.dataset.v;ask();document.querySelector(`.opt[data-v="${A[i]}"]`).focus()});
+document.getElementById("nx").onclick=()=>{if(i===Q.length-1)calc();else{i++;ask()}};
+document.getElementById("bk").onclick=()=>{if(i>0){i--;ask()}else intro()};
+document.getElementById("x").onclick=()=>{if(confirm("Quit and clear your answers?"))intro()}}
+function calc(){$(`<section class="load"><h2>Calculating your results carefully …</h2>${DECO}<div class="deco" aria-hidden="true"><i class="big" style="background:var(--pink)"></i></div></section>`);setTimeout(results,2400)}
+const avg=(k)=>{const r=A;return Math.round(r.reduce((a,b)=>a+b,0)/r.length*100)/100};
+const zone=(v,c)=>v<=c[0]?0:v<=c[1]?1:2;
+function results(){const R=SC.map(([k,n,c])=>{const v=avg(k);return{k,n,c,v,z:zone(v,c)}});const t=R[0];
+const pct=(v)=>((v-1)/4*100);
+$(`<div class="res"><div class="top"><span></span><span></span></div><h1>Your results</h1><p class="lead">Based on the Burnout Assessment Tool (BAT), short work-related version (BAT-12).</p>
+<div class="hero" style="background:${ZC[t.z]}"><b>Overall score</b><div class="s">${t.v.toFixed(2)}<span style="font-size:22px"> / 5</span></div><div class="z">${ZT[t.z]}</div><p>${ZD[t.z]}</p></div>
+${R.slice(1).map(r=>`<div class="sc"><div class="row"><span class="n">${r.n}</span><span class="v"><em style="color:${ZC[r.z]}">${ZN[r.z]}</em> · ${r.v.toFixed(2)}</span></div>
+<div class="track" aria-hidden="true"><i style="width:${pct(r.c[0])}%;background:var(--g)"></i><i style="width:${pct(r.c[1])-pct(r.c[0])}%;background:var(--o)"></i><i style="flex:1;background:var(--r)"></i></div><div class="pin"><u style="left:${pct(r.v)}%"></u></div></div>`).join("")}
+<p class="note">This survey estimates burnout complaints. It cannot diagnose burnout or tell it apart from conditions such as depression; that needs an interview with a trained professional. Zones come from clinical cut-offs for Flemish employees (Schaufeli, De Witte &amp; Desart, 2020), so treat them as a guide for other populations. If you feel unwell, please speak to a health professional.</p>
+<button class="ghost" id="re">Take it again</button></div>`);
+document.getElementById("re").onclick=intro;window.scrollTo(0,0)}
+intro();
+</script>
+</body>
+</html>
