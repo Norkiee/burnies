@@ -21,6 +21,14 @@ const storageGet = key => { try { return localStorage.getItem(key); } catch { re
 const storageSet = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 const isStandalone = () => matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 const appUrl = () => new URL("./", location.href).href;
+const directStart = () => new URLSearchParams(location.search).get("start");
+
+function clearDirectStart() {
+  if (directStart() !== "checkin") return;
+  const url = new URL(location.href);
+  url.searchParams.delete("start");
+  history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}
 
 function showToast(message) {
   clearTimeout(toastTimer);
@@ -70,6 +78,7 @@ function renderFirstRun() {
 
 async function renderHome() {
   currentScreen = "home";
+  clearDirectStart();
   const available = await historyAvailable();
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !isStandalone() && storageGet("ios-install-dismissed") !== "1";
   app.innerHTML = `<header class="app-header"><span class="brand-word">Burnies</span><button class="icon-button" id="theme" type="button" aria-label="Change colour theme">◐</button></header><div class="page"><h1 class="home-heading" data-focus-heading tabindex="-1">How are things feeling?</h1><p class="home-copy">Take a quiet check-in, make a small plan, or look back at your own pattern.</p><div class="stack"><button class="tile primary-tile" id="home-checkin" type="button"><strong>Check in</strong><span>12 short statements · about 2 minutes</span>${TILE_ARROW}</button><button class="tile" id="home-plan" type="button"><strong>My plan</strong><span>Choose one change for this week</span>${TILE_ARROW}</button><button class="tile" id="home-history" type="button"><strong>History</strong><span>${available ? "Saved on this device only" : "History is off on this device"}</span>${TILE_ARROW}</button></div>${installPrompt && !isStandalone() ? '<button class="ghost section-gap" id="install-app" type="button">Install Burnies</button>' : ""}${ios ? '<section class="install-card"><button class="icon-button" id="dismiss-ios" type="button" aria-label="Dismiss install instructions">×</button><h3>Add Burnies to your Home Screen</h3><p>In Safari, tap Share, then Add to Home Screen. It will work offline after the first visit.</p></section>' : ""}<nav class="home-links" aria-label="More"><button id="home-support" type="button">Support</button><button id="home-about" type="button">Privacy</button></nav></div>`;
@@ -94,7 +103,7 @@ function toggleTheme() {
 
 function renderPrivacy() {
   currentScreen = "privacy";
-  app.innerHTML = `${header("Privacy")}<section class="page"><h1 data-focus-heading tabindex="-1">Private by design</h1><p class="lead">There is no account, server database, analytics, tracking, or advertising.</p><div class="card"><h3>On this device</h3><p class="muted section-gap">Completed check-ins and plans are stored in your browser so you can see your history. You can copy a backup or clear everything at any time.</p></div><div class="card"><h3>Calendar links</h3><p class="muted section-gap">Calendar links open only when you choose them. Review events use a neutral title. Your scores, signs, driver, and message are never included.</p></div><p class="note">Clearing browser data or removing the installed app may remove your history.</p></section>`;
+  app.innerHTML = `${header("Privacy")}<section class="page"><h1 data-focus-heading tabindex="-1">Private by design</h1><p class="lead">There is no account, server database, analytics, tracking, or advertising.</p><div class="card"><h3>On this device</h3><p class="muted section-gap">Completed check-ins and plans are stored in your browser so you can review or clear them at any time.</p></div><div class="card"><h3>Calendar links</h3><p class="muted section-gap">Calendar links open only when you choose them. Review events use a neutral title. Your scores, signs, driver, and message are never included.</p></div><p class="note">Clearing browser data or removing the installed app may remove your history.</p></section>`;
   wireHeader(); focusHeading();
 }
 
@@ -359,4 +368,8 @@ const savedTheme = storageGet("theme");
 if (savedTheme) document.documentElement.dataset.theme = savedTheme;
 registerInstallEvents();
 registerServiceWorker();
-if (storageGet("onboarding-complete") === "1") renderHome(); else renderFirstRun();
+if (directStart() === "checkin") {
+  storageSet("onboarding-complete", "1");
+  renderCheckInIntro();
+} else if (storageGet("onboarding-complete") === "1") renderHome();
+else renderFirstRun();
