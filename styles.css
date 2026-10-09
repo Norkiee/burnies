@@ -38,6 +38,7 @@ p { margin: 0; }
 .lead { color: var(--mute); margin: 8px 0 22px; font-weight: 500; }
 .muted { color: var(--mute); font-weight: 500; }
 .small, .note { color: var(--mute); font-size: 14px; font-weight: 500; line-height: 1.5; }
+.result-disclaimer { margin: 28px 0; }
 .citation { color: var(--mute); font-size: 11px; font-weight: 500; line-height: 1.45; margin-top: 18px; opacity: .72; }
 .stack { display: flex; flex-direction: column; gap: 10px; }
 .section-gap { margin-top: 22px; }
