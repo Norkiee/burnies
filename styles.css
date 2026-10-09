@@ -95,6 +95,7 @@ textarea.field { min-height: 144px; resize: vertical; }
 .two-column > div { min-width: 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .chip { min-height: 44px; border: 0; border-radius: 999px; padding: 10px 16px; background: var(--pill); color: var(--ink); font-weight: 700; }
+.chip[aria-pressed="true"] { background: var(--brand); color: #fff; }
 .flow > :not(.top) { width: 100%; max-width: 520px; margin-inline: auto; }
 
 .app-header { width: calc(100% + 24px); margin-inline: -12px; display: flex; align-items: center; justify-content: space-between; min-height: 48px; }
